@@ -63,11 +63,14 @@ AGENT_ROUTING_RULES = {
         "required_any": [
             "memory_allocation",
             "buffer_manipulation",
-            "memory_unsafe"
+            "memory_unsafe",
+            "memory_lifecycle",
+            "alloc_arithmetic"
         ],
         "supporting_signals": [
             "native_code",
-            "access_control"
+            "access_control",
+            "race_conditions"
         ]
     }
 }
@@ -109,6 +112,9 @@ AGENT_SIGNAL_MAPPING = {
         "memory_allocation",
         "buffer_manipulation",
         "memory_unsafe",
+        "memory_lifecycle",
+        "alloc_arithmetic",
+        "race_conditions",
         "native_code",
         "access_control"
     ]
