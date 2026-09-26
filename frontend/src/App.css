@@ -410,11 +410,25 @@ button {
   color: var(--muted);
 }
 
+.meta-stack {
+  margin-bottom: 24px;
+}
+
 .meta-grid {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 16px;
-  margin-bottom: 24px;
+}
+
+.repo-about {
+  margin-top: 16px;
+}
+
+.repo-about-text {
+  margin: 0;
+  color: #d5e0f1;
+  line-height: 1.65;
+  font-size: 0.98rem;
 }
 
 .meta-card,

@@ -25,7 +25,7 @@ from fastapi.responses import FileResponse, StreamingResponse
 from pydantic import BaseModel, Field
 
 from agents import ALL_AGENTS
-from github import clone_repository, normalize_github_url
+from github import clone_repository, normalize_github_url, summarize_repository
 from orchestrator import SecurityOrchestrator
 from report import generate_pdf_report
 
@@ -265,10 +265,18 @@ def execute_scan(request, scan_id, temporary_directory, on_progress):
         {}
     )
 
+    repository_overview = summarize_repository(
+        repository_path=repository_path,
+        repository_url=repository_url,
+        languages=repository_analysis.get("languages", []),
+        github_token=request.github_token
+    )
+
     return {
         "scan_id": scan_id,
         "repository_url": repository_url,
         "scan_profile": request.scan_profile,
+        "repository_overview": repository_overview,
 
         "files_analyzed": analysis_result.get(
             "files_collected",
