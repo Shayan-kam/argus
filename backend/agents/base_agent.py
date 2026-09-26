@@ -1,38 +1,20 @@
 """
 Base class for all Argus security agents.
+
+Agents use the Gemini API for LLM-powered analysis.
 """
 
-import json
-import os
 import time
 
-from google import genai
-from google.genai import types
-from dotenv import load_dotenv
-from pydantic import BaseModel
-
-from findings import (
-    SecurityFinding,
-    normalize_finding,
-    deduplicate_findings,
-)
-
-
-load_dotenv()
-
-GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
-GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-3.8-flash")
-
-
-class AgentResponse(BaseModel):
-    findings: list[SecurityFinding]
+from findings import normalize_finding, deduplicate_findings
+from gemini_base import run_gemini_agent
 
 
 class BaseSecurityAgent:
     name = "Base Security Agent"
     vulnerability_type = "Security Vulnerability"
 
-    # These are used by the routing system.
+    # Used by the routing system.
     trigger_signals = []
 
     system_instructions = """
@@ -119,6 +101,8 @@ If no vulnerability is found, return:
 Important requirements:
 
 - Report only vulnerabilities in your assigned category.
+- Inspect every provided file. Report each concrete issue, including Low and Medium findings, not only the most severe one.
+- A smaller weakness still counts when a specific line of code supports it.
 - Do not invent files, lines, or code.
 - Use exact relative paths from the supplied source.
 - Use accurate line numbers from the numbered source.
@@ -133,38 +117,28 @@ Important requirements:
         return prompt
 
     def call_gemini(self, prompt):
-        if not GEMINI_API_KEY:
-            raise RuntimeError("GEMINI_API_KEY is not set.")
+        """
+        Send the analysis prompt to Gemini and return the raw response.
+        """
 
-        client = genai.Client(api_key=GEMINI_API_KEY)
-        response = client.models.generate_content(
-            model=GEMINI_MODEL,
-            contents=prompt,
-            config=types.GenerateContentConfig(
-                response_mime_type="application/json",
-                response_schema=AgentResponse,
-                temperature=0,
-            ),
+        return run_gemini_agent(
+            system_instruction=self.system_instructions,
+            prompt=prompt
         )
 
-        return response.text or ""
-
-    def parse_response(self, response_text):
-        try:
-            parsed_response = json.loads(response_text)
-
-        except json.JSONDecodeError as error:
+    def parse_response(self, response_data):
+        if isinstance(response_data, dict) and "raw_output" in response_data:
             print(
-                f"{self.name} returned invalid JSON: {error}"
+                f"{self.name} returned non-JSON output."
             )
-            print(response_text)
+            print(response_data["raw_output"])
             return []
 
-        if isinstance(parsed_response, list):
-            raw_findings = parsed_response
+        if isinstance(response_data, list):
+            raw_findings = response_data
 
-        elif isinstance(parsed_response, dict):
-            raw_findings = parsed_response.get(
+        elif isinstance(response_data, dict):
+            raw_findings = response_data.get(
                 "findings",
                 []
             )
@@ -172,7 +146,7 @@ Important requirements:
         else:
             print(
                 f"{self.name} returned unexpected response type: "
-                f"{type(parsed_response).__name__}"
+                f"{type(response_data).__name__}"
             )
             return []
 
@@ -210,16 +184,16 @@ Important requirements:
         prompt = self.build_prompt(source_files)
 
         print(
-            f"Sending focused source code to {self.name}..."
+            f"Sending focused source code to {self.name} (Gemini)..."
         )
 
-        response_text = self.call_gemini(prompt)
+        response_data = self.call_gemini(prompt)
 
         print(
             f"Received response from {self.name}."
         )
 
-        findings = self.parse_response(response_text)
+        findings = self.parse_response(response_data)
 
         elapsed_seconds = time.perf_counter() - start_time
 
