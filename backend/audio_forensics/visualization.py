@@ -1,12 +1,35 @@
 """Bounded chart data computed from the analyzed waveform, with no inferred labels."""
 
 import numpy as np
+import librosa
 
 WAVEFORM_POINTS = 480
 SPECTROGRAM_COLUMNS = 256
 SPECTROGRAM_ROWS = 64
 N_FFT = 1024
 HOP_LENGTH = 256
+
+
+def _downsample_surface(matrix, target_time_bins=180, target_frequency_bins=96):
+    matrix = np.asarray(matrix, dtype=np.float32)
+    if matrix.size == 0:
+        return np.zeros((max(1, target_frequency_bins), max(1, target_time_bins)), dtype=np.float32)
+    time_bins = max(1, min(target_time_bins, matrix.shape[1]))
+    frequency_bins = max(1, min(target_frequency_bins, matrix.shape[0]))
+    time_index = np.linspace(0, matrix.shape[1] - 1, time_bins, dtype=int)
+    frequency_index = np.linspace(0, matrix.shape[0] - 1, frequency_bins, dtype=int)
+    return matrix[np.ix_(frequency_index, time_index)].astype(np.float32)
+
+
+def _normalize_surface(matrix):
+    matrix = np.asarray(matrix, dtype=np.float32)
+    if matrix.size == 0:
+        return matrix
+    max_value = float(np.nanmax(matrix))
+    if not np.isfinite(max_value) or max_value <= 0:
+        return np.zeros_like(matrix, dtype=np.float32)
+    normalized = matrix / max_value
+    return np.clip(normalized, 0.0, 1.0).astype(np.float32)
 
 
 def build_visual_analysis(waveform, sample_rate):
@@ -25,29 +48,38 @@ def build_visual_analysis(waveform, sample_rate):
             "rms": round(float(np.sqrt(np.mean(chunk ** 2))), 6),
         })
 
-    # Centered, overlapping FFT windows. Process small groups so a 10-minute
-    # recording does not allocate an entire high-resolution spectrogram.
-    padded = np.pad(signal, (N_FFT // 2, N_FFT // 2))
-    frame_count = 1 + len(signal) // HOP_LENGTH
-    columns = min(SPECTROGRAM_COLUMNS, frame_count)
-    frame_edges = np.linspace(0, frame_count, columns + 1, dtype=int)
-    frequencies = np.fft.rfftfreq(N_FFT, d=1 / sample_rate)
-    display_frequencies = np.geomspace(max(sample_rate / N_FFT, 62.5), sample_rate / 2, SPECTROGRAM_ROWS)
-    window = np.hanning(N_FFT).astype(np.float32)
+    stft = librosa.stft(signal, n_fft=N_FFT, hop_length=HOP_LENGTH)
+    magnitude = np.abs(stft)
+    power = magnitude ** 2
+    frequencies = librosa.fft_frequencies(sr=sample_rate, n_fft=N_FFT)
+    positive = frequencies <= sample_rate / 2
+    frequencies = frequencies[positive]
+    power = power[positive]
+    target_time_bins = min(220, max(100, min(SPECTROGRAM_COLUMNS, power.shape[1])))
+    target_frequency_bins = min(128, max(64, min(SPECTROGRAM_ROWS, power.shape[0])))
+    downsampled_power = _downsample_surface(power, target_time_bins=target_time_bins, target_frequency_bins=target_frequency_bins)
+    normalized_surface = _normalize_surface(downsampled_power)
+    dB_surface = librosa.amplitude_to_db(normalized_surface, ref=np.max)
+    dB_surface = np.clip(dB_surface, -80, 0)
+    time_bins = np.linspace(0, duration, downsampled_power.shape[1])
+    frequency_bins = np.linspace(0, sample_rate / 2, downsampled_power.shape[0])
+    time_axis = np.round(time_bins, 6).tolist()
+    frequency_axis = np.round(frequency_bins, 3).tolist()
+
     display_power = []
     accumulated_power = np.zeros(len(frequencies), dtype=np.float64)
-    for first, stop in zip(frame_edges[:-1], frame_edges[1:]):
-        block = padded[first * HOP_LENGTH:(stop - 1) * HOP_LENGTH + N_FFT]
-        frames = np.lib.stride_tricks.sliding_window_view(block, N_FFT)[::HOP_LENGTH]
-        power = np.abs(np.fft.rfft(frames * window, axis=1)) ** 2
-        power[:, 1:-1] *= 2  # Account for the omitted negative frequencies.
-        averaged = power.mean(axis=0)
-        accumulated_power += power.sum(axis=0)
-        display_power.append(np.interp(display_frequencies, frequencies, averaged))
-    display_power = np.asarray(display_power).T
-    reference = max(float(display_power.max()), 1e-20)
-    decibels = 10 * np.log10(np.maximum(display_power, 1e-20) / reference)
-    decibels = np.clip(np.rint(decibels), -80, 0).astype(int)
+    for frame in range(power.shape[1]):
+        frame_power = power[:, frame]
+        accumulated_power += frame_power
+        display_power.append(frame_power)
+    display_power = np.asarray(display_power).T if display_power else np.zeros((0, 0), dtype=np.float32)
+    if display_power.size:
+        reference = max(float(display_power.max()), 1e-20)
+        decibels = 10 * np.log10(np.maximum(display_power, 1e-20) / reference)
+        decibels = np.clip(np.rint(decibels), -80, 0).astype(int)
+    else:
+        decibels = np.zeros((0, 0), dtype=int)
+
     total_power = float(accumulated_power.sum())
     bands = []
     for label, low, high in [
@@ -63,15 +95,36 @@ def build_visual_analysis(waveform, sample_rate):
             "energy_percent": round(100 * value / total_power, 4) if total_power else 0.0,
         })
 
+    terrain = {
+        "time_seconds": time_axis,
+        "frequency_hz": frequency_axis,
+        "surface": normalized_surface.tolist(),
+        "n_time_bins": int(normalized_surface.shape[1]),
+        "n_frequency_bins": int(normalized_surface.shape[0]),
+        "alpha": 1.0,
+        "z_axis_label": "Normalized spectral magnitude (z = S(t, f))",
+        "reference": "Spectral power is normalized for terrain height; synthetic risk is kept as an overlay, not a height dimension.",
+    }
+    waterfall = {
+        "time_seconds": time_axis,
+        "frequency_hz": frequency_axis,
+        "frames": normalized_surface.T.tolist(),
+        "n_time_bins": int(normalized_surface.shape[1]),
+        "n_frequency_bins": int(normalized_surface.shape[0]),
+        "reference": "Real STFT power values are used; no fabricated anomalies are introduced.",
+    }
+
     return {
         "waveform": envelope,
         "spectrogram": {
-            "time_edges_seconds": np.linspace(0, duration, columns + 1).round(6).tolist(),
-            "frequencies_hz": display_frequencies.round(3).tolist(),
+            "time_edges_seconds": np.linspace(0, duration, normalized_surface.shape[1] + 1).round(6).tolist(),
+            "frequencies_hz": frequency_axis,
             "db": decibels.tolist(), "min_db": -80, "max_db": 0,
             "frequency_scale": "log",
             "reference": "Strongest displayed frequency-time cell; not microphone loudness.",
         },
+        "terrain": terrain,
+        "waterfall": waterfall,
         "frequency_bands": bands,
         "notes": "Charts use normalized mono audio. Brightness and amplitude describe sound, not evidence of manipulation.",
     }
