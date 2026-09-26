@@ -2,8 +2,6 @@
 
 Argus is a web application with two analysis workspaces: GitHub source-code security scanning and audio forensics. A React/Vite frontend talks to a FastAPI backend. The code scanner combines deterministic checks with signal-routed Google Gemini agents; the audio workflow analyzes recordings with digital signal processing and an optional local model.
 
-![Argus architecture](argus-module-communication.drawio.png)
-
 Argus is a research and triage aid, not a replacement for a security review, a full static-analysis suite, a penetration test, or validated audio-authenticity testing. Code findings can be incomplete or incorrect. The default audio score is experimental and is not a calibrated probability or proof of authenticity. Verify results independently.
 
 ## Contents
