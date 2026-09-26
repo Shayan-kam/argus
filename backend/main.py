@@ -493,7 +493,9 @@ def _agent_category(agent_name):
         "Cross-Site Scripting Agent": "web",
         "Hardcoded Secrets Agent": "secrets",
         "Binary Exploitation Agent": "pwn",
-        "Reverse Engineering Agent": "rev"
+        "Reverse Engineering Agent": "rev",
+        "Low-Level & Memory Security Agent": "pwn",
+        "HTTP Header Injection Agent": "web"
     }
 
     return categories.get(agent_name, "general")

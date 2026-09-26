@@ -72,6 +72,18 @@ AGENT_ROUTING_RULES = {
             "access_control",
             "race_conditions"
         ]
+    },
+
+    "HTTP Header Injection Agent": {
+        "required_any": [
+            "host_header",
+            "absolute_url_from_request",
+            "response_header_write"
+        ],
+        "supporting_signals": [
+            "user_input",
+            "authentication"
+        ]
     }
 }
 
@@ -117,6 +129,14 @@ AGENT_SIGNAL_MAPPING = {
         "race_conditions",
         "native_code",
         "access_control"
+    ],
+
+    "HTTP Header Injection Agent": [
+        "host_header",
+        "absolute_url_from_request",
+        "response_header_write",
+        "user_input",
+        "authentication"
     ]
 }
 

@@ -74,8 +74,9 @@ function App() {
         const cleanedRepositoryUrl = normalizeRepositoryUrl(repositoryUrl);
 
         if (!cleanedRepositoryUrl) {
-            setError("Please enter a GitHub repository URL.");
-            return;
+            const message = "Please enter a GitHub repository URL.";
+            setError(message);
+            throw new Error(message);
         }
 
         setRepositoryUrl(cleanedRepositoryUrl);
@@ -186,6 +187,7 @@ function App() {
             }
         } catch (err) {
             setError(err.message || "Something went wrong.");
+            throw err;
         } finally {
             setLoading(false);
         }

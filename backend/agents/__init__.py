@@ -4,6 +4,7 @@ from agents.secrets import SecretsAgent
 from agents.binary_exploit import BinaryExploitAgent
 from agents.reverse_engineering import ReverseEngineeringAgent
 from agents.low_level_agent import LowLevelAgent
+from agents.http_header_injection import HTTPHeaderInjectionAgent
 
 __all__ = [
     "SQLInjectionAgent",
@@ -12,6 +13,7 @@ __all__ = [
     "BinaryExploitAgent",
     "ReverseEngineeringAgent",
     "LowLevelAgent",
+    "HTTPHeaderInjectionAgent",
     "ALL_AGENTS"
 ]
 
@@ -21,5 +23,6 @@ ALL_AGENTS = [
     SecretsAgent,
     BinaryExploitAgent,
     ReverseEngineeringAgent,
-    LowLevelAgent
+    LowLevelAgent,
+    HTTPHeaderInjectionAgent
 ]
