@@ -11,7 +11,6 @@ import PreprocessingPanel from "./components/PreprocessingPanel";
 import FindingsSection from "./components/FindingsSection";
 import ScrollReveal from "./components/ScrollReveal";
 import AudioForensics from "./components/AudioForensics";
-import MoltenMetal from "./components/MoltenMetal";
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:8000";
 
@@ -255,10 +254,11 @@ function App() {
                     </div>
 
                     <p className="subtitle">
-                        Gemini-powered source code security analysis for public
-                        and private GitHub repositories.
+                        AI-powered multi-model agentic scanning harness designed to discover, 
+                        validate, and prove software vulnerabilities at enterprise scale.
                         <br />
-                        Audio forensics reviews recordings for possible edits, generated speech, and other changes.
+                        Audio forensics reviews recordings for possible edits, generated speech, 
+                        and other changes, providing comprehensive analysis for audio security.
                     </p>
                 </header>
 
