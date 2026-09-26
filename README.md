@@ -21,7 +21,7 @@ Argus is a triage aid, not a replacement for a security review, a full static-an
 - [Troubleshooting](#troubleshooting)
 
 ## Architecture
-![Alt Text](argus-module-communication.drawio.png "Architecture Diagram")
+![Argus architecture](argus-module-communication.drawio.png)
 
 ## Features
 
