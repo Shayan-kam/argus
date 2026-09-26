@@ -1,5 +1,6 @@
 import { useState } from "react";
 import "./App.css";
+import argusLogo from "./assets/argus-eye.jpg";
 import SummaryCards from "./components/SummaryCards";
 import SeverityChart from "./components/SeverityChart";
 import ScanForm from "./components/ScanForm";
@@ -11,6 +12,7 @@ import FindingsSection from "./components/FindingsSection";
 import MoltenMetal from "./components/MoltenMetal";
 import ScrollReveal from "./components/ScrollReveal";
 import AudioForensics from "./components/AudioForensics";
+import MoltenMetal from "./components/MoltenMetal";
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:8000";
 
@@ -244,7 +246,7 @@ function App() {
             <div className="container">
                 <header className="hero-panel" data-reveal>
                     <div className="brand-row">
-                        <div className="brand-mark">A</div>
+                        <img className="brand-mark" src={argusLogo} alt="Argus" />
                         <div>
                             <p className="eyebrow">AI SECURITY ANALYSIS</p>
                             <h1>Argus</h1>
@@ -253,7 +255,9 @@ function App() {
 
                     <p className="subtitle">
                         Gemini-powered source code security analysis for public
-                        and private GitHub repositories
+                        and private GitHub repositories.
+                        <br />
+                        Audio forensics reviews recordings for possible edits, generated speech, and other changes.
                     </p>
                 </header>
 
