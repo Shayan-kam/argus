@@ -1,6 +1,6 @@
 # Argus
 
-Argus is a local web application for reviewing public or private GitHub repositories for potential source-code security issues. A FastAPI backend clones and scans the repository, combines deterministic rules with signal-routed Google Gemini agents, streams scan progress to a React frontend, and creates a downloadable PDF report.
+Argus is a local web application for reviewing public GitHub repositories for potential source-code security issues. A FastAPI backend clones and scans the repository, combines deterministic rules with signal-routed Google Gemini agents, streams scan progress to a React frontend, and creates a downloadable PDF report.
 
 Argus is a triage aid, not a replacement for a security review, a full static-analysis suite, or a penetration test. Its rules and AI findings can be incomplete or incorrect; verify findings against the code and the application's runtime behavior.
 
