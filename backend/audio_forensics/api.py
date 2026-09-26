@@ -6,13 +6,14 @@ import os
 import tempfile
 import time
 import uuid
+from contextlib import contextmanager
 from datetime import datetime, timezone
 from functools import lru_cache
 from pathlib import Path
 
 import numpy as np
 
-from fastapi import APIRouter, File, HTTPException, UploadFile
+from fastapi import APIRouter, File, Form, HTTPException, UploadFile
 from fastapi.responses import FileResponse
 
 router = APIRouter(prefix="/api/audio", tags=["Audio forensics"])
@@ -90,10 +91,38 @@ def sample_audio():
     return FileResponse(path, media_type="audio/wav", filename="argus-demo.wav")
 
 
+@contextmanager
+def runtime_audio_gemini_settings(request_key: str | None = None):
+    """Temporarily apply a Gemini API key override for one audio analysis run."""
+
+    override_key = (request_key or "").strip()
+    previous_values = {
+        "GEMINI_API_KEY": os.environ.get("GEMINI_API_KEY"),
+        "GOOGLE_API_KEY": os.environ.get("GOOGLE_API_KEY"),
+    }
+
+    try:
+        if override_key:
+            os.environ["GEMINI_API_KEY"] = override_key
+            os.environ["GOOGLE_API_KEY"] = override_key
+        yield
+    finally:
+        for key, value in previous_values.items():
+            if value is None:
+                os.environ.pop(key, None)
+            else:
+                os.environ[key] = value
+
+
 @router.post("/analyze")
-def analyze_uploads(files: list[UploadFile] = File(...)):
+def analyze_uploads(
+    files: list[UploadFile] = File(...),
+    gemini_api_key: str | None = Form(default=None),
+    api_key: str | None = Form(default=None),
+):
     started = time.perf_counter()
     analysis_id = str(uuid.uuid4())
+    runtime_key = (gemini_api_key or api_key or "").strip()
     try:
         if not 1 <= len(files) <= MAX_FILES:
             raise HTTPException(status_code=400, detail=f"Choose between 1 and {MAX_FILES} audio files.")
@@ -105,44 +134,50 @@ def analyze_uploads(files: list[UploadFile] = File(...)):
             raise HTTPException(status_code=503, detail="Audio analysis is unavailable. Check the backend dependencies and model configuration.") from exc
 
         results = []
-        with tempfile.TemporaryDirectory(prefix="argus_audio_") as folder:
-            for index, upload in enumerate(files):
-                file_started = time.perf_counter()
-                filename = (upload.filename or f"audio-{index + 1}").replace("\\", "/").split("/")[-1]
-                # Client filenames are metadata only, never server paths.
-                suffix = Path(filename).suffix.lower()
-                if len(suffix) > 12 or not suffix[1:].isalnum():
-                    suffix = ".audio"
-                destination = Path(folder) / f"{index}{suffix}"
-                total = 0
-                try:
-                    with destination.open("wb") as output:
-                        while chunk := upload.file.read(1024 * 1024):
-                            total += len(chunk)
-                            if total > MAX_FILE_BYTES:
-                                raise ValueError("File exceeds the 50 MB upload limit.")
-                            output.write(chunk)
-                    result = analyze_audio(str(destination), model=model, manipulation_model=manipulation)
-                except Exception as exc:
-                    logger.exception("Audio analysis failed for %s", filename)
-                    result = error_result(str(exc))
-                finally:
-                    destination.unlink(missing_ok=True)
-                if result.get("error"):
-                    logger.warning("Audio analysis error for %s: %s", filename, result["error"])
-                metadata = result.setdefault("metadata", {})
-                metadata.update({
-                    "input_size_bytes": upload.size if upload.size is not None else total,
-                    "filename_extension": Path(filename).suffix.lower(),
-                    "analysis_seconds": round(time.perf_counter() - file_started, 4),
-                })
-                results.append(_json_ready({
-                    "filename": filename,
-                    "file_id": f"{analysis_id}:{index + 1}",
-                    "analysis_id": analysis_id,
-                    "analyzed_at_utc": datetime.now(timezone.utc).isoformat(),
-                    **result,
-                }))
+        with runtime_audio_gemini_settings(runtime_key):
+            with tempfile.TemporaryDirectory(prefix="argus_audio_") as folder:
+                for index, upload in enumerate(files):
+                    file_started = time.perf_counter()
+                    filename = (upload.filename or f"audio-{index + 1}").replace("\\", "/").split("/")[-1]
+                    # Client filenames are metadata only, never server paths.
+                    suffix = Path(filename).suffix.lower()
+                    if len(suffix) > 12 or not suffix[1:].isalnum():
+                        suffix = ".audio"
+                    destination = Path(folder) / f"{index}{suffix}"
+                    total = 0
+                    try:
+                        with destination.open("wb") as output:
+                            while chunk := upload.file.read(1024 * 1024):
+                                total += len(chunk)
+                                if total > MAX_FILE_BYTES:
+                                    raise ValueError("File exceeds the 50 MB upload limit.")
+                                output.write(chunk)
+                        result = analyze_audio(str(destination), model=model, manipulation_model=manipulation)
+                    except Exception as exc:
+                        logger.exception("Audio analysis failed for %s", filename)
+                        result = error_result(str(exc))
+                    finally:
+                        destination.unlink(missing_ok=True)
+                    if result.get("error"):
+                        logger.warning("Audio analysis error for %s: %s", filename, result["error"])
+                    metadata = result.setdefault("metadata", {})
+                    metadata.update({
+                        "input_size_bytes": upload.size if upload.size is not None else total,
+                        "filename_extension": Path(filename).suffix.lower(),
+                        "analysis_seconds": round(time.perf_counter() - file_started, 4),
+                    })
+                    result.setdefault("runtime_config", {})
+                    result["runtime_config"].update({
+                        "gemini_api_key_present": bool(runtime_key),
+                        "gemini_api_key_source": "request" if runtime_key else "environment",
+                    })
+                    results.append(_json_ready({
+                        "filename": filename,
+                        "file_id": f"{analysis_id}:{index + 1}",
+                        "analysis_id": analysis_id,
+                        "analyzed_at_utc": datetime.now(timezone.utc).isoformat(),
+                        **result,
+                    }))
         return {"results": results, "total_seconds": round(time.perf_counter() - started, 3)}
     finally:
         for upload in files:
