@@ -119,15 +119,35 @@ SIGNAL_PATTERNS = {
         r"bearer"
     ],
 
-    # Low-level memory allocation routines
+    # Low-level dynamic memory allocation routines
     "memory_allocation": [
         r"\bmalloc\s*\(",
         r"\bcalloc\s*\(",
         r"\brealloc\s*\(",
-        r"\bfree\s*\(",
         r"\balloca\s*\(",
-        r"\bnew\s+\w+",
-        r"\bdelete\b"
+        r"\bnew\s+[\w\[\]]+",
+    ],
+
+    # Memory lifecycle, deallocation, and deletion
+    "memory_lifecycle": [
+        r"\bfree\s*\(",
+        r"\bdelete\s+[\w\[\]]+",
+        r"\bdelete\[\]",
+    ],
+
+    # Dynamic allocation sizing with arithmetic operations (overflows/wraparounds)
+    "alloc_arithmetic": [
+        r"\bmalloc\s*\([^)]*[\*\+\-][^)]*\)",
+        r"\bcalloc\s*\([^)]*[\*\+\-][^)]*\)",
+        r"\brealloc\s*\([^,]+,\s*[^)]*[\*\+\-][^)]*\)",
+    ],
+
+    # Filesystem check-then-use conditions vulnerable to TOCTOU races
+    "race_conditions": [
+        r"\baccess\s*\(",
+        r"\bstat\s*\(",
+        r"\blstat\s*\(",
+        r"\bfstat\s*\(",
     ],
 
     # String, pointer, and bounded buffer operations
