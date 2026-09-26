@@ -6,23 +6,26 @@ import json
 import os
 import time
 
-import requests
+from google import genai
+from google.genai import types
 from dotenv import load_dotenv
+from pydantic import BaseModel
 
-from findings import normalize_finding, deduplicate_findings
+from findings import (
+    SecurityFinding,
+    normalize_finding,
+    deduplicate_findings,
+)
 
 
 load_dotenv()
 
-OLLAMA_URL = os.getenv(
-    "OLLAMA_URL",
-    "http://localhost:11434"
-)
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
+GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-3.8-flash")
 
-OLLAMA_MODEL = os.getenv(
-    "OLLAMA_MODEL",
-    "qwen2.5-coder:3b"
-)
+
+class AgentResponse(BaseModel):
+    findings: list[SecurityFinding]
 
 
 class BaseSecurityAgent:
@@ -129,26 +132,22 @@ Important requirements:
 
         return prompt
 
-    def call_ollama(self, prompt):
-        response = requests.post(
-            f"{OLLAMA_URL}/api/generate",
-            json={
-                "model": OLLAMA_MODEL,
-                "prompt": prompt,
-                "stream": False,
-                "format": "json",
-                "options": {
-                    "temperature": 0
-                }
-            },
-            timeout=300
+    def call_gemini(self, prompt):
+        if not GEMINI_API_KEY:
+            raise RuntimeError("GEMINI_API_KEY is not set.")
+
+        client = genai.Client(api_key=GEMINI_API_KEY)
+        response = client.models.generate_content(
+            model=GEMINI_MODEL,
+            contents=prompt,
+            config=types.GenerateContentConfig(
+                response_mime_type="application/json",
+                response_schema=AgentResponse,
+                temperature=0,
+            ),
         )
 
-        response.raise_for_status()
-
-        response_data = response.json()
-
-        return response_data.get("response", "")
+        return response.text or ""
 
     def parse_response(self, response_text):
         try:
@@ -214,7 +213,7 @@ Important requirements:
             f"Sending focused source code to {self.name}..."
         )
 
-        response_text = self.call_ollama(prompt)
+        response_text = self.call_gemini(prompt)
 
         print(
             f"Received response from {self.name}."

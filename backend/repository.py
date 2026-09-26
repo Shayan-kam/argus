@@ -6,7 +6,7 @@ Responsibilities:
 1. Discover relevant source files.
 2. Ignore dependency and build directories.
 3. Read source files safely.
-4. Limit the amount of source code sent to Ollama.
+4. Limit the amount of source code sent to specialized agents.
 """
 
 from pathlib import Path
