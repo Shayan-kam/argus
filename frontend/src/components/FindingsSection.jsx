@@ -22,7 +22,7 @@ function FindingsSection({ findings }) {
 
     return (
         <section className="findings-section">
-            <div className="section-heading-inline">
+            <div className="section-heading-inline" data-reveal>
                 <h2>Potential Vulnerabilities</h2>
                 <span className="count-pill">{findings.length}</span>
             </div>

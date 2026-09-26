@@ -14,7 +14,7 @@ function AgentRoutingPanel({ routing }) {
         : [];
 
     return (
-        <div className="insight-panel">
+        <div className="insight-panel" data-reveal>
             <p className="section-eyebrow">ROUTING</p>
             <h3>Triggered agents</h3>
 

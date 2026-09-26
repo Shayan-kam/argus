@@ -34,6 +34,7 @@ function SummaryCards({ summary }) {
         <article
           className="summary-card"
           key={card.label}
+          data-reveal
         >
           <p className="summary-label">{card.label}</p>
 

@@ -8,7 +8,7 @@ function PreprocessingPanel({ preprocessing }) {
         : [];
 
     return (
-        <div className="insight-panel">
+        <div className="insight-panel" data-reveal>
             <p className="section-eyebrow">PREPROCESSING</p>
             <h3>Detected signals</h3>
 

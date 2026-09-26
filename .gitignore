@@ -6,3 +6,4 @@ reports/*.pdf
 
 .env
 *.env
+backend/audio_forensics/*.joblib

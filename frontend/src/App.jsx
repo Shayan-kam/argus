@@ -9,6 +9,8 @@ import AgentResultsPanel from "./components/AgentResultsPanel";
 import PreprocessingPanel from "./components/PreprocessingPanel";
 import FindingsSection from "./components/FindingsSection";
 import MoltenMetal from "./components/MoltenMetal";
+import ScrollReveal from "./components/ScrollReveal";
+import AudioForensics from "./components/AudioForensics";
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:8000";
 
@@ -50,6 +52,7 @@ const INITIAL_PROGRESS = {
 };
 
 function App() {
+    const [workspace, setWorkspace] = useState("repository");
     const [repositoryUrl, setRepositoryUrl] = useState("");
     const [scanProfile, setScanProfile] = useState("standard");
     const [githubToken, setGithubToken] = useState("");
@@ -237,8 +240,9 @@ function App() {
                     opacity={1.0}
                 />
             </div>
+            <ScrollReveal />
             <div className="container">
-                <header className="hero-panel">
+                <header className="hero-panel" data-reveal>
                     <div className="brand-row">
                         <div className="brand-mark">A</div>
                         <div>
@@ -253,6 +257,30 @@ function App() {
                     </p>
                 </header>
 
+                <nav className="workspace-nav" data-reveal aria-label="Analysis workspace">
+                    <button
+                        type="button"
+                        className={workspace === "repository" ? "is-active" : ""}
+                        aria-pressed={workspace === "repository"}
+                        onClick={() => setWorkspace("repository")}
+                    >
+                        GitHub Security Analysis
+                    </button>
+                    <button
+                        type="button"
+                        className={workspace === "audio" ? "is-active" : ""}
+                        aria-pressed={workspace === "audio"}
+                        onClick={() => setWorkspace("audio")}
+                    >
+                        Audio Forensics
+                    </button>
+                </nav>
+
+                <div hidden={workspace !== "audio"}>
+                    <AudioForensics apiBaseUrl={API_BASE_URL} />
+                </div>
+
+                <div hidden={workspace !== "repository"}>
                 <ScanForm
                     repositoryUrl={repositoryUrl}
                     onRepositoryUrlChange={setRepositoryUrl}
@@ -267,7 +295,7 @@ function App() {
                 />
 
                 {loading && (
-                    <div className="loading-panel progress-panel" aria-live="polite">
+                    <div className="loading-panel progress-panel" data-reveal aria-live="polite">
                         <div className="progress-copy">
                             <p className="section-eyebrow">ANALYSIS IN PROGRESS</p>
                             <h3>{progress.message}</h3>
@@ -300,11 +328,11 @@ function App() {
                     </div>
                 )}
 
-                {error && <div className="error">{error}</div>}
+                {error && <div className="error" data-reveal>{error}</div>}
 
                 {!loading && !error && scanId && (
                     <section className="results-section">
-                        <div className="results-header">
+                        <div className="results-header" data-reveal>
                             <div>
                                 <p className="section-eyebrow">SCAN COMPLETE</p>
                                 <h2>Security Overview</h2>
@@ -338,6 +366,7 @@ function App() {
                         <FindingsSection findings={findings} />
                     </section>
                 )}
+                </div>
             </div>
         </div>
     );
