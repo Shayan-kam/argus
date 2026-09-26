@@ -2,6 +2,7 @@
 PDF report generation for Argus.
 """
 
+import html
 from reportlab.lib import colors
 from reportlab.lib.pagesizes import letter
 from reportlab.lib.styles import getSampleStyleSheet
@@ -14,6 +15,15 @@ from reportlab.platypus import (
 )
 
 from findings import SecurityFinding
+
+
+def _safe(value) -> str:
+    """
+    Escapes HTML/XML entities (&, <, >) to avoid ReportLab Paragraph parser syntax errors.
+    """
+    if value is None:
+        return ""
+    return html.escape(str(value))
 
 
 def generate_pdf_report(
@@ -57,7 +67,7 @@ def generate_pdf_report(
 
     story.append(
         Paragraph(
-            f"<b>Repository:</b> {repository_url}",
+            f"<b>Repository:</b> {_safe(repository_url)}",
             styles["BodyText"]
         )
     )
@@ -86,7 +96,7 @@ def generate_pdf_report(
 
         story.append(
             Paragraph(
-                f"{index}. {finding.title}",
+                f"{index}. {_safe(finding.title)}",
                 styles["Heading2"]
             )
         )
@@ -94,14 +104,14 @@ def generate_pdf_report(
         story.append(
             Paragraph(
                 f"<b>Vulnerability Type:</b> "
-                f"{finding.vulnerability_type}",
+                f"{_safe(finding.vulnerability_type)}",
                 styles["BodyText"]
             )
         )
 
         story.append(
             Paragraph(
-                f"<b>Severity:</b> {finding.severity}",
+                f"<b>Severity:</b> {_safe(finding.severity)}",
                 styles["BodyText"]
             )
         )
@@ -123,7 +133,7 @@ def generate_pdf_report(
         story.append(
             Paragraph(
                 f"<b>Location:</b> "
-                f"{finding.file}, line {line_text}",
+                f"{_safe(finding.file)}, line {line_text}",
                 styles["BodyText"]
             )
         )
@@ -134,7 +144,7 @@ def generate_pdf_report(
 
         story.append(
             Paragraph(
-                f"<b>Evidence:</b> {finding.evidence}",
+                f"<b>Evidence:</b> {_safe(finding.evidence)}",
                 styles["BodyText"]
             )
         )
@@ -145,7 +155,7 @@ def generate_pdf_report(
 
         story.append(
             Paragraph(
-                f"<b>Description:</b> {finding.description}",
+                f"<b>Description:</b> {_safe(finding.description)}",
                 styles["BodyText"]
             )
         )
@@ -157,7 +167,7 @@ def generate_pdf_report(
         story.append(
             Paragraph(
                 f"<b>Recommendation:</b> "
-                f"{finding.recommendation}",
+                f"{_safe(finding.recommendation)}",
                 styles["BodyText"]
             )
         )
