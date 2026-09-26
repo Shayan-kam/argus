@@ -9,6 +9,7 @@ import AgentRoutingPanel from "./components/AgentRoutingPanel";
 import AgentResultsPanel from "./components/AgentResultsPanel";
 import PreprocessingPanel from "./components/PreprocessingPanel";
 import FindingsSection from "./components/FindingsSection";
+import MoltenMetal from "./components/MoltenMetal";
 import ScrollReveal from "./components/ScrollReveal";
 import AudioForensics from "./components/AudioForensics";
 import MoltenMetal from "./components/MoltenMetal";
