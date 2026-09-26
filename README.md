@@ -39,7 +39,10 @@ Create `backend/.env`:
 
 ```
 GEMINI_API_KEY=your-gemini-api-key
-GEMINI_MODEL=gemini-2.5-flash
+GEMINI_MODEL=gemini-3.8-flash
+GEMINI_FALLBACK_MODEL=gemini-2.5-flash
+GEMINI_MAX_RETRIES=4
+GEMINI_MAX_CONCURRENT=2
 
 # Optional — for private repos without passing token in API requests
 GITHUB_TOKEN=ghp_...

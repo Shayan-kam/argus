@@ -4,6 +4,35 @@ const STATUS_STYLES = {
     failed: "chip-danger"
 };
 
+function formatAgentError(reason) {
+    if (!reason) {
+        return "";
+    }
+
+    if (reason.includes("404") || reason.includes("NOT_FOUND")) {
+        return (
+            "Configured Gemini model is unavailable. "
+            + "Set GEMINI_MODEL=gemini-3.8-flash in .env and restart the backend."
+        );
+    }
+
+    if (reason.includes("503") || reason.includes("UNAVAILABLE")) {
+        return (
+            "Gemini API was temporarily unavailable due to high demand. "
+            + "Re-run the scan — requests are retried automatically."
+        );
+    }
+
+    if (reason.includes("429") || reason.includes("RESOURCE_EXHAUSTED")) {
+        return (
+            "Gemini API rate limit reached. "
+            + "Wait a moment and re-run the scan."
+        );
+    }
+
+    return reason;
+}
+
 function AgentResultsPanel({ agentResults }) {
     if (!Array.isArray(agentResults) || agentResults.length === 0) {
         return null;
@@ -52,7 +81,9 @@ function AgentResultsPanel({ agentResults }) {
                             </div>
 
                             {result.reason && result.status !== "completed" && (
-                                <p className="agent-result-reason">{result.reason}</p>
+                                <p className="agent-result-reason">
+                                    {formatAgentError(result.reason)}
+                                </p>
                             )}
 
                             {Array.isArray(result.files_analyzed)

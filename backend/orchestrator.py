@@ -14,6 +14,7 @@ Pipeline:
 """
 
 from concurrent.futures import ThreadPoolExecutor, as_completed
+import os
 import time
 
 from repository import collect_source_code
@@ -425,10 +426,15 @@ class SecurityOrchestrator:
                 f"selected agent(s) concurrently..."
             )
 
-            # Run independent Gemini requests concurrently.
+            # Limit concurrency to reduce Gemini rate-limit spikes.
+            max_concurrent = int(
+                os.getenv("GEMINI_MAX_CONCURRENT")
+                or os.getenv("GEMINI_MAX_CONCURRENT_AGENTS", "2")
+            )
+
             max_workers = min(
                 len(selected_agents),
-                5
+                max_concurrent
             )
 
             with ThreadPoolExecutor(
@@ -437,8 +443,12 @@ class SecurityOrchestrator:
 
                 future_to_agent = {}
 
-                for selected_agent in selected_agents:
+                for index, selected_agent in enumerate(selected_agents):
                     agent = selected_agent["agent"]
+
+                    # Stagger submissions to avoid thundering herd.
+                    if index > 0:
+                        time.sleep(0.5)
 
                     future = executor.submit(
                         self.run_one_agent,
