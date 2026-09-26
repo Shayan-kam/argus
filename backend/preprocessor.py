@@ -343,6 +343,23 @@ SIGNAL_PATTERNS = {
         r"RedirectResponse",
         r"redirect\s*\(",
         r"werkzeug\.urls\.url_join"
+    ],
+
+    # Web authorization, IDOR paths, and sensitive administrative route definitions
+    "access_control_risk": [
+        r"@\w+\.route\(['\"][^'\"]*<(?:\w+:)?(?:user_id|id|account_id|uuid|pk)>[^'\"]*['\"]",
+        r"@\w+\.route\(['\"][^'\"]*/admin[^'\"]*['\"]",
+        r"def\s+(?:profile|account|admin_\w+|delete_\w+|edit_\w+)\s*\(",
+        r"request\.args\.get\(['\"](?:user_id|id|account)['\"]\)",
+    ],
+
+    # Insecure direct lookups and explicit missing-auth comments/indicators
+    "missing_auth_boundary": [
+        r"DEMO_USERS\.get\(",
+        r"SELECT\s+\*\s+FROM\s+\w+\s+WHERE\s+id\s*=\s*\?",
+        r"(?i)missing authentication",
+        r"(?i)missing auth",
+        r"(?i)idor",
     ]
 }
 
