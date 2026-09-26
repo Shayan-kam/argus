@@ -14,6 +14,7 @@ Pipeline:
 """
 
 from concurrent.futures import ThreadPoolExecutor, as_completed
+import os
 import time
 
 from repository import collect_source_code
@@ -206,7 +207,7 @@ class SecurityOrchestrator:
         """
         Return a result for quick scans.
 
-        Quick scans use deterministic rules only and do not call Ollama.
+        Quick scans use deterministic rules only and do not call Gemini.
         """
 
         skipped_agents = []
@@ -430,12 +431,14 @@ class SecurityOrchestrator:
                 f"selected agent(s) concurrently..."
             )
 
-            # This is appropriate for independent Ollama requests.
-            # You can reduce this to 2 if your computer struggles
-            # with multiple simultaneous model requests.
+            # Keep Gemini request concurrency conservative by default;
+            # raise the environment setting after checking project limits.
             max_workers = min(
                 len(selected_agents),
-                3
+                max(
+                    1,
+                    int(os.getenv("GEMINI_MAX_CONCURRENT_AGENTS", "1"))
+                )
             )
 
             with ThreadPoolExecutor(
