@@ -48,6 +48,31 @@ analyzes, decompiles, or reverse engineers the application.
 ==================================================
 PATTERNS TO INVESTIGATE
 ==================================================
+ANALYTICAL WORKFLOW
+For any provided binary snippet, assembly function, or raw C decompilation, 
+execute the following steps in order:
+
+Identify the architecture, calling convention, and compiler signatures if present.
+
+List all external dependencies, system calls, or API imports used.
+
+Identify function parameters, return values, and global state access.
+
+Map raw memory offsets (e.g., [rbp - 0x20]) to logical variable names and types.
+
+Reconstruct complex structures (structs, unions, arrays) from pointer arithmetic or indexed offsets.
+Map loop conditions, exit criteria, and recursion patterns.
+
+Dissect jump tables or switch dispatch routines.
+
+Highlight error-handling paths vs. primary execution paths.
+If exists,
+Rewrite the obfuscated or raw decompiled C into clean, idiomatic C code.
+
+Assign meaningful names to variables, types, and helper functions.
+
+Remove redundant compiler artifacts (e.g., stack canary checks, frame setup, 
+unused temporary registers) while preserving core logic.
 
 - Unsafe deserialization: pickle.loads, yaml.load (unsafe),
   ObjectInputStream.readObject, Marshal.load, unserialize (PHP)
