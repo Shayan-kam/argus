@@ -76,7 +76,7 @@ cd backend
 py -m venv .venv
 .\.venv\Scripts\Activate.ps1
 python -m pip install --upgrade pip
-pip install -r requirements.txt
+pip install -r ../requirements.txt
 ```
 
 On macOS or Linux, activate the environment with `source .venv/bin/activate` instead.
@@ -242,6 +242,7 @@ The project currently has no configured automated test suite. Use `/api/health`,
 
 ```text
 Argus/
+|-- requirements.txt     Backend Python dependencies
 |-- backend/
 |   |-- agents/          Specialized Gemini security agents
 |   |-- reports/         Generated PDF reports
@@ -255,7 +256,6 @@ Argus/
 |   |-- github.py        GitHub URL handling, cloning, and overview
 |   |-- findings.py      Finding schema, normalization, deduplication
 |   |-- report.py        PDF report generation
-|   `-- requirements.txt Backend Python dependencies
 `-- frontend/
         |-- src/
         |   |-- components/  Scan form, progress, findings, and summaries
