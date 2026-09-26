@@ -1,35 +1,20 @@
 """
 Base class for all Argus security agents.
+
+Agents use the Gemini API for LLM-powered analysis.
 """
 
-import json
-import os
 import time
 
-import requests
-from dotenv import load_dotenv
-
 from findings import normalize_finding, deduplicate_findings
-
-
-load_dotenv()
-
-OLLAMA_URL = os.getenv(
-    "OLLAMA_URL",
-    "http://localhost:11434"
-)
-
-OLLAMA_MODEL = os.getenv(
-    "OLLAMA_MODEL",
-    "qwen2.5-coder:3b"
-)
+from gemini_base import run_gemini_agent
 
 
 class BaseSecurityAgent:
     name = "Base Security Agent"
     vulnerability_type = "Security Vulnerability"
 
-    # These are used by the routing system.
+    # Used by the routing system.
     trigger_signals = []
 
     system_instructions = """
@@ -129,43 +114,29 @@ Important requirements:
 
         return prompt
 
-    def call_ollama(self, prompt):
-        response = requests.post(
-            f"{OLLAMA_URL}/api/generate",
-            json={
-                "model": OLLAMA_MODEL,
-                "prompt": prompt,
-                "stream": False,
-                "format": "json",
-                "options": {
-                    "temperature": 0
-                }
-            },
-            timeout=300
+    def call_gemini(self, prompt):
+        """
+        Send the analysis prompt to Gemini and return the raw response.
+        """
+
+        return run_gemini_agent(
+            system_instruction=self.system_instructions,
+            prompt=prompt
         )
 
-        response.raise_for_status()
-
-        response_data = response.json()
-
-        return response_data.get("response", "")
-
-    def parse_response(self, response_text):
-        try:
-            parsed_response = json.loads(response_text)
-
-        except json.JSONDecodeError as error:
+    def parse_response(self, response_data):
+        if isinstance(response_data, dict) and "raw_output" in response_data:
             print(
-                f"{self.name} returned invalid JSON: {error}"
+                f"{self.name} returned non-JSON output."
             )
-            print(response_text)
+            print(response_data["raw_output"])
             return []
 
-        if isinstance(parsed_response, list):
-            raw_findings = parsed_response
+        if isinstance(response_data, list):
+            raw_findings = response_data
 
-        elif isinstance(parsed_response, dict):
-            raw_findings = parsed_response.get(
+        elif isinstance(response_data, dict):
+            raw_findings = response_data.get(
                 "findings",
                 []
             )
@@ -173,7 +144,7 @@ Important requirements:
         else:
             print(
                 f"{self.name} returned unexpected response type: "
-                f"{type(parsed_response).__name__}"
+                f"{type(response_data).__name__}"
             )
             return []
 
@@ -211,16 +182,16 @@ Important requirements:
         prompt = self.build_prompt(source_files)
 
         print(
-            f"Sending focused source code to {self.name}..."
+            f"Sending focused source code to {self.name} (Gemini)..."
         )
 
-        response_text = self.call_ollama(prompt)
+        response_data = self.call_gemini(prompt)
 
         print(
             f"Received response from {self.name}."
         )
 
-        findings = self.parse_response(response_text)
+        findings = self.parse_response(response_data)
 
         elapsed_seconds = time.perf_counter() - start_time
 

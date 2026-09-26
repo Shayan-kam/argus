@@ -29,11 +29,7 @@ from rules import run_rule_based_scans
 
 from findings import deduplicate_findings
 
-from agents import (
-    SQLInjectionAgent,
-    XSSAgent,
-    SecretsAgent
-)
+from agents import ALL_AGENTS
 
 
 class SecurityOrchestrator:
@@ -43,9 +39,8 @@ class SecurityOrchestrator:
 
     def __init__(self):
         self.agents = [
-            SQLInjectionAgent(),
-            XSSAgent(),
-            SecretsAgent()
+            agent_class()
+            for agent_class in ALL_AGENTS
         ]
 
     def build_focused_source_files(
@@ -206,7 +201,7 @@ class SecurityOrchestrator:
         """
         Return a result for quick scans.
 
-        Quick scans use deterministic rules only and do not call Ollama.
+        Quick scans use deterministic rules only and do not call Gemini.
         """
 
         skipped_agents = []
@@ -430,12 +425,10 @@ class SecurityOrchestrator:
                 f"selected agent(s) concurrently..."
             )
 
-            # This is appropriate for independent Ollama requests.
-            # You can reduce this to 2 if your computer struggles
-            # with multiple simultaneous model requests.
+            # Run independent Gemini requests concurrently.
             max_workers = min(
                 len(selected_agents),
-                3
+                5
             )
 
             with ThreadPoolExecutor(

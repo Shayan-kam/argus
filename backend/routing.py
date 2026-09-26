@@ -35,7 +35,63 @@ AGENT_ROUTING_RULES = {
             "secret_like_content"
         ],
         "supporting_signals": []
+    },
+
+    "Binary Exploitation Agent": {
+        "required_any": [
+            "memory_unsafe",
+            "native_code"
+        ],
+        "supporting_signals": [
+            "shell_execution",
+            "assembly_code"
+        ]
+    },
+
+    "Reverse Engineering Agent": {
+        "required_any": [
+            "unsafe_deserialization",
+            "binary_format"
+        ],
+        "supporting_signals": [
+            "native_code",
+            "authentication"
+        ]
     }
+}
+
+
+AGENT_SIGNAL_MAPPING = {
+    "SQL Injection Agent": [
+        "sql_query",
+        "database_execution",
+        "user_input"
+    ],
+
+    "Cross-Site Scripting Agent": [
+        "javascript_dom",
+        "dangerous_html_rendering",
+        "html_template",
+        "user_input"
+    ],
+
+    "Hardcoded Secrets Agent": [
+        "secret_like_content"
+    ],
+
+    "Binary Exploitation Agent": [
+        "memory_unsafe",
+        "native_code",
+        "shell_execution",
+        "assembly_code"
+    ],
+
+    "Reverse Engineering Agent": [
+        "unsafe_deserialization",
+        "binary_format",
+        "native_code",
+        "authentication"
+    ]
 }
 
 
@@ -114,26 +170,7 @@ def get_relevant_files_for_agent(agent_name, repository_analysis):
     Return files containing signals relevant to the selected agent.
     """
 
-    agent_signal_mapping = {
-        "SQL Injection Agent": [
-            "sql_query",
-            "database_execution",
-            "user_input"
-        ],
-
-        "Cross-Site Scripting Agent": [
-            "javascript_dom",
-            "dangerous_html_rendering",
-            "html_template",
-            "user_input"
-        ],
-
-        "Hardcoded Secrets Agent": [
-            "secret_like_content"
-        ]
-    }
-
-    relevant_signal_names = agent_signal_mapping.get(agent_name, [])
+    relevant_signal_names = AGENT_SIGNAL_MAPPING.get(agent_name, [])
 
     relevant_files = set()
     focused_regions = []

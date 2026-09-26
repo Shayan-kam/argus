@@ -117,6 +117,75 @@ SIGNAL_PATTERNS = {
         r"password",
         r"authorization",
         r"bearer"
+    ],
+
+    "memory_unsafe": [
+        r"\bstrcpy\s*\(",
+        r"\bstrcat\s*\(",
+        r"\bgets\s*\(",
+        r"\bsprintf\s*\(",
+        r"\bvsprintf\s*\(",
+        r"\bmemcpy\s*\(",
+        r"\bmemmove\s*\(",
+        r"unsafe\s*\{",
+        r"\bmalloc\s*\(",
+        r"\bfree\s*\(",
+        r"\brealloc\s*\(",
+        r"alloca\s*\(",
+        r"printf\s*\([^\"]*\+",
+        r"scanf\s*\("
+    ],
+
+    "native_code": [
+        r"#include\s*<",
+        r"\bextern\s+\"C\"",
+        r"\bJNIEXPORT\b",
+        r"\b__asm__\b",
+        r"\basm\s*\(",
+        r"\.c\"",
+        r"\.cpp\"",
+        r"\.h\"",
+        r"\buintptr_t\b",
+        r"\bvoid\s*\*\s*\w+"
+    ],
+
+    "binary_format": [
+        r"\.elf\b",
+        r"\.o\b",
+        r"\.so\b",
+        r"\.dylib\b",
+        r"\.dll\b",
+        r"\.bin\b",
+        r"\.exe\b",
+        r"readObject\s*\(",
+        r"ObjectInputStream",
+        r"pickle\.loads",
+        r"yaml\.load\s*\(",
+        r"unserialize\s*\("
+    ],
+
+    "unsafe_deserialization": [
+        r"pickle\.loads",
+        r"pickle\.load",
+        r"yaml\.load\s*\(",
+        r"ObjectInputStream",
+        r"readObject\s*\(",
+        r"Marshal\.load",
+        r"unserialize\s*\(",
+        r"jsonpickle",
+        r"dill\.loads",
+        r"serde_json::from_str"
+    ],
+
+    "assembly_code": [
+        r"\bmov\s+",
+        r"\bpush\s+",
+        r"\bpop\s+",
+        r"\bcall\s+",
+        r"\bjmp\s+",
+        r"\bret\b",
+        r"\.section\s+",
+        r"\.globl\s+"
     ]
 }
 
@@ -144,7 +213,13 @@ def detect_languages(source_files):
             ".go": "go",
             ".cs": "csharp",
             ".cpp": "cpp",
+            ".cc": "cpp",
+            ".h": "c",
+            ".hpp": "cpp",
             ".c": "c",
+            ".rs": "rust",
+            ".asm": "assembly",
+            ".s": "assembly",
             ".sql": "sql"
         }
 

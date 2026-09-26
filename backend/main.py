@@ -2,14 +2,13 @@
 Argus FastAPI backend.
 
 Responsibilities:
-- Accept a public GitHub repository URL.
+- Accept GitHub repository URLs (public or private with token).
 - Clone the repository.
 - Run the optimized security-analysis orchestrator.
 - Generate a PDF report.
 - Return findings, routing information, and performance metrics.
 """
 
-import os
 import shutil
 import tempfile
 import uuid
@@ -20,6 +19,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from pydantic import BaseModel, Field
 
+from agents import ALL_AGENTS
 from github import clone_repository
 from orchestrator import SecurityOrchestrator
 from report import generate_pdf_report
@@ -27,11 +27,10 @@ from report import generate_pdf_report
 
 app = FastAPI(
     title="Argus Security Scanner",
-    version="1.0.0"
+    version="1.1.0"
 )
 
 
-# Allow the React frontend to communicate with FastAPI.
 app.add_middleware(
     CORSMiddleware,
     allow_origin_regex=r"https?://(localhost|127\.0\.0\.1):\d+",
@@ -43,8 +42,6 @@ app.add_middleware(
 
 security_orchestrator = SecurityOrchestrator()
 
-
-# Store generated reports during the current server session.
 REPORT_DIRECTORY = Path("reports")
 REPORT_DIRECTORY.mkdir(exist_ok=True)
 
@@ -53,12 +50,20 @@ class AnalyzeRequest(BaseModel):
     repository_url: str = Field(
         ...,
         min_length=1,
-        description="Public GitHub repository URL"
+        description="GitHub repository URL"
     )
 
     scan_profile: str = Field(
         default="standard",
         description="quick, standard, or deep"
+    )
+
+    github_token: str | None = Field(
+        default=None,
+        description=(
+            "Optional GitHub personal access token with `repo` scope "
+            "for private repositories"
+        )
     )
 
 
@@ -78,6 +83,30 @@ def serialize_findings(findings):
             serialized_findings.append(finding)
 
     return serialized_findings
+
+
+def serialize_agent_results(agent_results):
+    """
+    Normalize agent result payloads for the API response.
+    """
+
+    serialized = []
+
+    for result in agent_results:
+        findings = result.get("findings", [])
+        serialized_findings = serialize_findings(findings)
+
+        serialized.append({
+            "agent_name": result.get("agent_name"),
+            "status": result.get("status"),
+            "reason": result.get("reason"),
+            "elapsed_seconds": result.get("elapsed_seconds", 0),
+            "files_analyzed": result.get("files_analyzed", []),
+            "findings_count": len(serialized_findings),
+            "findings": serialized_findings
+        })
+
+    return serialized
 
 
 def calculate_severity_summary(findings):
@@ -102,11 +131,48 @@ def calculate_severity_summary(findings):
     return summary
 
 
+def get_agent_catalog():
+    """
+    Return metadata for all registered security agents.
+    """
+
+    catalog = []
+
+    for agent_class in ALL_AGENTS:
+        agent = agent_class()
+
+        catalog.append({
+            "name": agent.name,
+            "vulnerability_type": agent.vulnerability_type,
+            "trigger_signals": agent.trigger_signals,
+            "category": _agent_category(agent.name)
+        })
+
+    return catalog
+
+
+def _agent_category(agent_name):
+    """
+    Map agent names to display categories for the frontend.
+    """
+
+    categories = {
+        "SQL Injection Agent": "web",
+        "Cross-Site Scripting Agent": "web",
+        "Hardcoded Secrets Agent": "secrets",
+        "Binary Exploitation Agent": "pwn",
+        "Reverse Engineering Agent": "rev"
+    }
+
+    return categories.get(agent_name, "general")
+
+
 @app.get("/")
 def root():
     return {
         "name": "Argus Security Scanner",
-        "status": "running"
+        "status": "running",
+        "version": "1.1.0"
     }
 
 
@@ -114,6 +180,62 @@ def root():
 def health_check():
     return {
         "status": "healthy"
+    }
+
+
+@app.get("/api/agents")
+def list_agents():
+    """
+    Return all available security agents and their routing signals.
+    """
+
+    return {
+        "agents": get_agent_catalog(),
+        "total": len(ALL_AGENTS)
+    }
+
+
+@app.get("/api/capabilities")
+def scan_capabilities():
+    """
+    Describe supported scan profiles and repository access options.
+    """
+
+    return {
+        "scan_profiles": [
+            {
+                "id": "quick",
+                "name": "Quick Scan",
+                "description": (
+                    "Deterministic rules only — no AI agents"
+                )
+            },
+            {
+                "id": "standard",
+                "name": "Standard Scan",
+                "description": (
+                    "Rules plus routed Gemini agents for relevant signals"
+                )
+            },
+            {
+                "id": "deep",
+                "name": "Deep Scan",
+                "description": (
+                    "Full rules and all routed agents with extended analysis"
+                )
+            }
+        ],
+        "repository_access": {
+            "public": True,
+            "private": True,
+            "private_requirements": (
+                "GitHub personal access token with `repo` scope, "
+                "supplied via github_token in the request body or "
+                "GITHUB_TOKEN environment variable"
+            )
+        },
+        "llm_provider": "Google Gemini",
+        "agent_count": len(ALL_AGENTS)
     }
 
 
@@ -156,7 +278,8 @@ def analyze_repository(request: AnalyzeRequest):
 
         repository_path = clone_repository(
             repository_url=request.repository_url,
-            destination_directory=temporary_directory
+            destination_directory=temporary_directory,
+            github_token=request.github_token
         )
 
         analysis_result = (
@@ -194,9 +317,11 @@ def analyze_repository(request: AnalyzeRequest):
             {}
         )
 
-        agent_results = analysis_result.get(
-            "agent_results",
-            []
+        agent_results = serialize_agent_results(
+            analysis_result.get(
+                "agent_results",
+                []
+            )
         )
 
         repository_analysis = analysis_result.get(
@@ -273,7 +398,6 @@ def analyze_repository(request: AnalyzeRequest):
         )
 
     finally:
-        # The cloned repository is no longer needed after analysis.
         shutil.rmtree(
             temporary_directory,
             ignore_errors=True

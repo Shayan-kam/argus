@@ -2,12 +2,21 @@ import { useState } from "react";
 import "./App.css";
 import SummaryCards from "./components/SummaryCards";
 import SeverityChart from "./components/SeverityChart";
-import FindingCard from "./components/FindingCard";
+import ScanForm from "./components/ScanForm";
+import LoadingPanel from "./components/LoadingPanel";
+import MetaGrid from "./components/MetaGrid";
+import AgentRoutingPanel from "./components/AgentRoutingPanel";
+import AgentResultsPanel from "./components/AgentResultsPanel";
+import PreprocessingPanel from "./components/PreprocessingPanel";
+import FindingsSection from "./components/FindingsSection";
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:8000";
 
 function App() {
     const [repositoryUrl, setRepositoryUrl] = useState("");
+    const [scanProfile, setScanProfile] = useState("standard");
+    const [githubToken, setGithubToken] = useState("");
+    const [showTokenField, setShowTokenField] = useState(false);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
     const [findings, setFindings] = useState([]);
@@ -28,15 +37,21 @@ function App() {
         setLoading(true);
 
         try {
+            const body = {
+                repository_url: repositoryUrl,
+                scan_profile: scanProfile
+            };
+
+            if (githubToken.trim()) {
+                body.github_token = githubToken.trim();
+            }
+
             const response = await fetch(`${API_BASE_URL}/api/analyze`, {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json"
                 },
-                body: JSON.stringify({
-                    repository_url: repositoryUrl,
-                    scan_profile: "standard"
-                })
+                body: JSON.stringify(body)
             });
 
             const data = await response.json();
@@ -67,24 +82,6 @@ function App() {
         window.open(reportUrl, "_blank");
     }
 
-    const selectedAgents = Array.isArray(scanData?.routing?.selected_agents)
-        ? scanData.routing.selected_agents.map((item) => {
-            if (typeof item === "string") {
-                return item;
-            }
-
-            return item?.agent?.name || item?.agent_name || "Agent";
-        }).filter(Boolean)
-        : [];
-
-    const skippedAgents = Array.isArray(scanData?.routing?.skipped_agents)
-        ? scanData.routing.skipped_agents.map((item) => item?.agent_name || item?.agent || "Skipped agent")
-        : [];
-
-    const preprocessingSignals = Array.isArray(scanData?.preprocessing?.signals)
-        ? scanData.preprocessing.signals
-        : [];
-
     const severitySummary = scanData?.summary?.severity || {
         Critical: 0,
         High: 0,
@@ -112,48 +109,25 @@ function App() {
                     </div>
 
                     <p className="subtitle">
-                        AI-powered source code security analysis for public repositories
+                        Gemini-powered source code security analysis for public
+                        and private GitHub repositories
                     </p>
                 </header>
 
-                <div className="input-section">
-                    <input
-                        type="text"
-                        value={repositoryUrl}
-                        onChange={(event) => setRepositoryUrl(event.target.value)}
-                        placeholder="https://github.com/user/repository"
-                        disabled={loading}
-                    />
+                <ScanForm
+                    repositoryUrl={repositoryUrl}
+                    onRepositoryUrlChange={setRepositoryUrl}
+                    scanProfile={scanProfile}
+                    onScanProfileChange={setScanProfile}
+                    githubToken={githubToken}
+                    onGithubTokenChange={setGithubToken}
+                    showTokenField={showTokenField}
+                    onToggleTokenField={() => setShowTokenField((value) => !value)}
+                    loading={loading}
+                    onSubmit={analyzeRepository}
+                />
 
-                    <button onClick={analyzeRepository} disabled={loading}>
-                        {loading ? "Analyzing..." : "Analyze Repository"}
-                    </button>
-                </div>
-
-                {loading && (
-                    <div className="loading-panel" aria-live="polite">
-                        <div className="loading-visual">
-                            <div className="orbit orbit-one" />
-                            <div className="orbit orbit-two" />
-                            <div className="core" />
-                        </div>
-
-                        <div className="loading-copy">
-                            <h3>Running repo analysis</h3>
-                            <p>
-                                Cloning the repository, detecting signals, routing agents,
-                                and evaluating the highest-risk code paths.
-                            </p>
-                        </div>
-
-                        <div className="loading-steps">
-                            <span className="step active">Fetch</span>
-                            <span className="step active">Signal scan</span>
-                            <span className="step active">Agent review</span>
-                            <span className="step">Report</span>
-                        </div>
-                    </div>
-                )}
+                {loading && <LoadingPanel />}
 
                 {error && <div className="error">{error}</div>}
 
@@ -164,7 +138,9 @@ function App() {
                                 <p className="section-eyebrow">SCAN COMPLETE</p>
                                 <h2>Security Overview</h2>
                                 <p className="results-subtitle">
-                                    {findings.length} potential security finding{findings.length === 1 ? "" : "s"} across the analyzed repository.
+                                    {findings.length} potential security finding
+                                    {findings.length === 1 ? "" : "s"} across the
+                                    analyzed repository.
                                 </p>
                             </div>
 
@@ -173,87 +149,22 @@ function App() {
                             </button>
                         </div>
 
-                        <div className="meta-grid">
-                            <div className="meta-card">
-                                <span className="meta-label">Repository</span>
-                                <strong>{scanData?.repository_url || repositoryUrl}</strong>
-                            </div>
-                            <div className="meta-card">
-                                <span className="meta-label">Files analyzed</span>
-                                <strong>{scanData?.files_analyzed ?? findings.length}</strong>
-                            </div>
-                            <div className="meta-card">
-                                <span className="meta-label">Scan profile</span>
-                                <strong>{scanData?.scan_profile || "standard"}</strong>
-                            </div>
-                            <div className="meta-card">
-                                <span className="meta-label">Runtime</span>
-                                <strong>{scanData?.timing?.total_seconds ?? 0}s</strong>
-                            </div>
-                        </div>
+                        <MetaGrid
+                            scanData={scanData}
+                            repositoryUrl={repositoryUrl}
+                        />
 
                         <div className="insight-grid">
-                            <div className="insight-panel">
-                                <p className="section-eyebrow">ROUTING</p>
-                                <h3>Triggered agents</h3>
-                                {selectedAgents.length > 0 ? (
-                                    <div className="chip-list">
-                                        {selectedAgents.map((agentName) => (
-                                            <span key={agentName} className="chip chip-success">{agentName}</span>
-                                        ))}
-                                    </div>
-                                ) : (
-                                    <p className="muted">No specialized agents were triggered.</p>
-                                )}
-
-                                {skippedAgents.length > 0 && (
-                                    <div className="skip-panel">
-                                        <h4>Skipped</h4>
-                                        <div className="chip-list">
-                                            {skippedAgents.slice(0, 4).map((agentName) => (
-                                                <span key={agentName} className="chip chip-muted">{agentName}</span>
-                                            ))}
-                                        </div>
-                                    </div>
-                                )}
-                            </div>
-
-                            <div className="insight-panel">
-                                <p className="section-eyebrow">PREPROCESSING</p>
-                                <h3>Detected signals</h3>
-                                {preprocessingSignals.length > 0 ? (
-                                    <div className="chip-list">
-                                        {preprocessingSignals.map((signal) => (
-                                            <span key={signal} className="chip chip-info">{signal}</span>
-                                        ))}
-                                    </div>
-                                ) : (
-                                    <p className="muted">No strong security signals were detected.</p>
-                                )}
-                            </div>
+                            <AgentRoutingPanel routing={scanData?.routing} />
+                            <PreprocessingPanel preprocessing={scanData?.preprocessing} />
                         </div>
+
+                        <AgentResultsPanel agentResults={scanData?.agent_results} />
 
                         <SummaryCards summary={displaySummary} />
                         <SeverityChart summary={{ severity_counts: severitySummary }} />
 
-                        <section className="findings-section">
-                            <div className="section-heading-inline">
-                                <h2>Potential Vulnerabilities</h2>
-                                <span className="count-pill">{findings.length}</span>
-                            </div>
-
-                            {findings.length === 0 ? (
-                                <div className="empty-state">
-                                    No potential vulnerabilities were identified.
-                                </div>
-                            ) : (
-                                <div className="findings-list">
-                                    {findings.map((finding) => (
-                                        <FindingCard key={finding.id} finding={finding} />
-                                    ))}
-                                </div>
-                            )}
-                        </section>
+                        <FindingsSection findings={findings} />
                     </section>
                 )}
             </div>
