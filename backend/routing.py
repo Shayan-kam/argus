@@ -96,6 +96,17 @@ AGENT_ROUTING_RULES = {
             "user_input",
             "authentication"
         ]
+    },
+
+    "Broken Access Control Agent": {
+        "required_any": [
+            "access_control_risk"
+        ],
+        "supporting_signals": [
+            "missing_auth_boundary",
+            "user_input",
+            "authentication"
+        ]
     }
 }
 
@@ -156,6 +167,13 @@ AGENT_SIGNAL_MAPPING = {
         "host_header",
         "absolute_url_from_request",
         "response_header_write",
+        "user_input",
+        "authentication"
+    ],
+
+    "Broken Access Control Agent": [
+        "access_control_risk",
+        "missing_auth_boundary",
         "user_input",
         "authentication"
     ]
