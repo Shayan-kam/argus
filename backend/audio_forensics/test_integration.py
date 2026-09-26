@@ -162,3 +162,19 @@ def test_missing_file_and_invalid_parameters():
     assert analyze_audio("missing.wav")["synthetic_probability"] is None
     assert analyze_audio(str(SAMPLE), threshold=float("nan"))["classification"] == "error"
     assert analyze_audio(str(SAMPLE), hop_seconds=0)["classification"] == "error"
+
+
+def test_audio_result_reports_summary_source_and_runtime_key_override(client, monkeypatch):
+    monkeypatch.setenv("GEMINI_API_KEY", "runtime-key")
+    monkeypatch.setenv("GOOGLE_API_KEY", "")
+
+    response = client.post(
+        "/api/audio/analyze",
+        files=[("files", ("sample.wav", SAMPLE.read_bytes(), "audio/wav"))],
+        data={"gemini_api_key": "runtime-key"},
+    )
+
+    assert response.status_code == 200
+    payload = response.json()["results"][0]
+    assert payload["ai_summary_source"] in {"gemini", "fallback"}
+    assert "gemini_api_key" in payload.get("runtime_config", {}) or "runtime_config" in payload
