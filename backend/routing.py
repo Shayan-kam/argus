@@ -7,7 +7,6 @@ This module determines:
 3. Which code regions are most relevant to each agent.
 """
 
-
 AGENT_ROUTING_RULES = {
     "SQL Injection Agent": {
         "required_any": [
@@ -74,6 +73,19 @@ AGENT_ROUTING_RULES = {
         ]
     },
 
+    "CI/CD & Pipeline Security Agent": {
+        "required_any": [
+            "workflow_injection",
+            "ci_pipeline",
+            "container_misconfig"
+        ],
+        "supporting_signals": [
+            "privileged_execution",
+            "insecure_action",
+            "shell_execution"
+        ]
+    },
+
     "HTTP Header Injection Agent": {
         "required_any": [
             "host_header",
@@ -81,6 +93,17 @@ AGENT_ROUTING_RULES = {
             "response_header_write"
         ],
         "supporting_signals": [
+            "user_input",
+            "authentication"
+        ]
+    },
+
+    "Broken Access Control Agent": {
+        "required_any": [
+            "access_control_risk"
+        ],
+        "supporting_signals": [
+            "missing_auth_boundary",
             "user_input",
             "authentication"
         ]
@@ -131,10 +154,26 @@ AGENT_SIGNAL_MAPPING = {
         "access_control"
     ],
 
+    "CI/CD & Pipeline Security Agent": [
+        "workflow_injection",
+        "ci_pipeline",
+        "container_misconfig",
+        "privileged_execution",
+        "insecure_action",
+        "shell_execution"
+    ],
+
     "HTTP Header Injection Agent": [
         "host_header",
         "absolute_url_from_request",
         "response_header_write",
+        "user_input",
+        "authentication"
+    ],
+
+    "Broken Access Control Agent": [
+        "access_control_risk",
+        "missing_auth_boundary",
         "user_input",
         "authentication"
     ]
@@ -144,12 +183,9 @@ AGENT_SIGNAL_MAPPING = {
 def calculate_agent_relevance(agent_name, repository_analysis):
     """
     Calculate a simple relevance score for an agent.
-
     This is a routing score, not a vulnerability confidence score.
     """
-
     rules = AGENT_ROUTING_RULES.get(agent_name)
-
     if not rules:
         return 0.0
 
@@ -172,7 +208,6 @@ def calculate_agent_relevance(agent_name, repository_analysis):
 
     score = 0.70
 
-    # Multiple relevant signal types increase routing confidence.
     if required_matches >= 2:
         score += 0.20
 
@@ -186,7 +221,6 @@ def select_relevant_agents(agents, repository_analysis):
     """
     Return agents that have enough evidence to justify execution.
     """
-
     selected_agents = []
     skipped_agents = []
 
@@ -215,7 +249,6 @@ def get_relevant_files_for_agent(agent_name, repository_analysis):
     """
     Return files containing signals relevant to the selected agent.
     """
-
     relevant_signal_names = AGENT_SIGNAL_MAPPING.get(agent_name, [])
 
     relevant_files = set()

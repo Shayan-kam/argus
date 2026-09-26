@@ -41,6 +41,17 @@ SOURCE_EXTENSIONS = {
     ".conf"
 }
 
+ALLOWED_FILENAMES = {
+    ".env",
+    ".env.local",
+    "Dockerfile",
+    "dockerfile",
+    "Containerfile",
+    "containerfile",
+    "docker-compose.yml",
+    "docker-compose.yaml",
+    "Jenkinsfile"
+}
 
 IGNORED_FILE_NAMES = {
     "package-lock.json",
@@ -93,11 +104,11 @@ def get_relevant_files(repository_path):
         if path.name in IGNORED_FILE_NAMES:
             continue
 
-        # Only include supported source-code extensions.
-        # Dotfiles such as .env have an empty suffix, so the name is checked too.
+        # Check either for valid extensions or exact manifest filenames (e.g., Dockerfile, .env)
         if (
             path.suffix.lower() not in SOURCE_EXTENSIONS
-            and path.name not in {".env", ".env.local"}
+            and path.name not in ALLOWED_FILENAMES
+            and not path.name.startswith("Dockerfile")
         ):
             continue
 

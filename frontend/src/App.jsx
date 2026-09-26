@@ -247,18 +247,24 @@ function App() {
             <div className="container">
                 <header className="hero-panel" data-reveal>
                     <div className="brand-row">
-                        <img className="brand-mark" src={argusLogo} alt="Argus" />
+                        <img className="brand-mark" src={argusLogo} alt="ARGUS" />
                         <div>
                             <p className="eyebrow">AI SECURITY ANALYSIS</p>
-                            <h1>Argus</h1>
+                            <h1 className="brand-title" tabIndex={0}>
+                                <span className="brand-title-text">ARGUS</span>
+                                <span className="brand-title-expand">
+                                    Agentic Risk Guard &amp; Unified Security
+                                </span>
+                            </h1>
                         </div>
                     </div>
 
                     <p className="subtitle">
-                        Gemini-powered source code security analysis for public
-                        and private GitHub repositories.
+                        AI-powered multi-model agentic scanning harness designed to discover, 
+                        validate, and prove software vulnerabilities at enterprise scale.
                         <br />
-                        Audio forensics reviews recordings for possible edits, generated speech, and other changes.
+                        Audio forensics reviews recordings for possible edits, generated speech, 
+                        and other changes, providing comprehensive analysis for audio security.
                     </p>
                 </header>
 

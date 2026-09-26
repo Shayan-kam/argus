@@ -633,6 +633,17 @@ class SecurityOrchestrator:
                 "Skipping all LLM analysis."
             )
 
+        # Append agents that were not selected so all registered agents display in results
+        for skipped in skipped_agents:
+            agent_results.append({
+                "agent_name": skipped["agent_name"],
+                "findings": [],
+                "elapsed_seconds": 0.0,
+                "files_analyzed": [],
+                "status": "skipped",
+                "reason": skipped.get("reason", "No relevant preprocessing signals detected")
+            })
+
         # ---------------------------------------------------------
         # Stage 6: Merge and deduplicate findings
         # ---------------------------------------------------------
