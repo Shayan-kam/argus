@@ -8,7 +8,7 @@ The existing repository security scanner is preserved.
 
 From the project root, install backend dependencies:
 
-    python -m pip install -r backend/requirements.txt
+    python -m pip install -r requirements.txt
 
 Start the API from the backend directory:
 

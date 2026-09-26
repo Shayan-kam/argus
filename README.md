@@ -127,7 +127,7 @@ The preprocessor is deliberately heuristic: a signal is a reason to route a revi
 - Git on `PATH` to clone repositories.
 - Network access to GitHub for repository cloning and optional repository metadata.
 - A Google Gemini API key to run any selected AI agent. `quick` scans and audio analysis without a trained model do not require one.
-- For AI-enabled scans, network access to the Gemini API. Audio decoding libraries and their dependencies are installed from `backend/requirements.txt`; a separate FFmpeg installation is not required.
+- For AI-enabled scans, network access to the Gemini API. Audio decoding libraries and their dependencies are installed from `requirements.txt`; a separate FFmpeg installation is not required.
 
 ## Setup
 
@@ -142,7 +142,7 @@ cd backend
 py -m venv .venv
 .\.venv\Scripts\Activate.ps1
 python -m pip install --upgrade pip
-pip install -r requirements.txt
+pip install -r ../requirements.txt
 ```
 
 On macOS or Linux, activate the environment with `source .venv/bin/activate` instead.
@@ -333,6 +333,7 @@ For a local smoke test, check `/api/health`, `/api/agents`, and `/api/audio/stat
 ```text
 Argus/
 |-- README.md                         Project guide
+|-- requirements.txt                  Backend and audio dependencies
 |-- argus-module-communication.drawio.png  Architecture image
 |-- backend/
 |   |-- main.py                        FastAPI routes, SSE, report endpoint
@@ -346,10 +347,9 @@ Argus/
 |   |-- gemini_base.py                 Gemini client, retries, model fallback
 |   |-- gemini_client.py               Alternate client module (not used by registered agents)
 |   |-- report.py                      PDF report generation
-|   |-- agents/                        Eight specialized security agents
+|   |-- agents/                        Specialized security agents
 |   |-- audio_forensics/               Audio API, DSP, inference, interpretation, visuals
 |   |-- reports/                       Generated PDF reports (local runtime output)
-|   |-- requirements.txt               Backend and audio dependencies
 |   `-- requirements-dev.txt           Pytest and HTTP test dependencies
 `-- frontend/
     |-- src/App.jsx                    Workspace switch and repository scan client
