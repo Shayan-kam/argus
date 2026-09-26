@@ -8,6 +8,7 @@ import AgentRoutingPanel from "./components/AgentRoutingPanel";
 import AgentResultsPanel from "./components/AgentResultsPanel";
 import PreprocessingPanel from "./components/PreprocessingPanel";
 import FindingsSection from "./components/FindingsSection";
+import ScrollReveal from "./components/ScrollReveal";
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:8000";
 
@@ -214,8 +215,9 @@ function App() {
 
     return (
         <div className="app-shell">
+            <ScrollReveal />
             <div className="container">
-                <header className="hero-panel">
+                <header className="hero-panel" data-reveal>
                     <div className="brand-row">
                         <div className="brand-mark">A</div>
                         <div>
@@ -244,7 +246,7 @@ function App() {
                 />
 
                 {loading && (
-                    <div className="loading-panel progress-panel" aria-live="polite">
+                    <div className="loading-panel progress-panel" data-reveal aria-live="polite">
                         <div className="progress-copy">
                             <p className="section-eyebrow">ANALYSIS IN PROGRESS</p>
                             <h3>{progress.message}</h3>
@@ -277,11 +279,11 @@ function App() {
                     </div>
                 )}
 
-                {error && <div className="error">{error}</div>}
+                {error && <div className="error" data-reveal>{error}</div>}
 
                 {!loading && !error && scanId && (
                     <section className="results-section">
-                        <div className="results-header">
+                        <div className="results-header" data-reveal>
                             <div>
                                 <p className="section-eyebrow">SCAN COMPLETE</p>
                                 <h2>Security Overview</h2>

@@ -874,6 +874,50 @@ button {
   50% { transform: scale(1.4); opacity: 0.7; }
 }
 
+[data-reveal] {
+  opacity: 0;
+  transform: translateY(34px);
+  transition:
+    opacity 0.7s ease,
+    transform 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+[data-reveal].is-visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.meta-grid > [data-reveal]:nth-child(2),
+.summary-grid > [data-reveal]:nth-child(2),
+.insight-grid > [data-reveal]:nth-child(2),
+.agent-results-grid > [data-reveal]:nth-child(2) {
+  transition-delay: 0.08s;
+}
+
+.meta-grid > [data-reveal]:nth-child(3),
+.summary-grid > [data-reveal]:nth-child(3),
+.agent-results-grid > [data-reveal]:nth-child(3) {
+  transition-delay: 0.16s;
+}
+
+.meta-grid > [data-reveal]:nth-child(4),
+.summary-grid > [data-reveal]:nth-child(4),
+.agent-results-grid > [data-reveal]:nth-child(4) {
+  transition-delay: 0.24s;
+}
+
+.agent-results-grid > [data-reveal]:nth-child(5) {
+  transition-delay: 0.32s;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-reveal] {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+}
+
 @media (max-width: 900px) {
   .meta-grid,
   .summary-grid,

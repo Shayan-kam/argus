@@ -40,7 +40,7 @@ function AgentResultsPanel({ agentResults }) {
 
     return (
         <section className="agent-results-panel">
-            <div className="section-heading-inline">
+            <div className="section-heading-inline" data-reveal>
                 <div>
                     <p className="section-eyebrow">AGENT OUTPUT</p>
                     <h2>Agent Results</h2>
@@ -53,7 +53,7 @@ function AgentResultsPanel({ agentResults }) {
                     const statusClass = STATUS_STYLES[result.status] || "chip-info";
 
                     return (
-                        <article key={result.agent_name} className="agent-result-card">
+                        <article key={result.agent_name} className="agent-result-card" data-reveal>
                             <div className="agent-result-header">
                                 <h3>{result.agent_name}</h3>
                                 <span className={`chip ${statusClass}`}>
