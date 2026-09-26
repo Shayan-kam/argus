@@ -6,6 +6,7 @@ from agents.reverse_engineering import ReverseEngineeringAgent
 from agents.low_level_agent import LowLevelAgent
 from agents.http_header_injection import HTTPHeaderInjectionAgent
 from agents.pipeline_agent import PipelineSecurityAgent
+from agents.access_control import AccessControlAgent
 
 __all__ = [
     "SQLInjectionAgent",
@@ -16,6 +17,7 @@ __all__ = [
     "LowLevelAgent",
     "HTTPHeaderInjectionAgent",
     "PipelineSecurityAgent",
+    "AccessControlAgent",
     "ALL_AGENTS"
 ]
 
@@ -27,5 +29,6 @@ ALL_AGENTS = [
     ReverseEngineeringAgent,
     LowLevelAgent,
     HTTPHeaderInjectionAgent,
-    PipelineSecurityAgent
+    PipelineSecurityAgent,
+    AccessControlAgent
 ]
