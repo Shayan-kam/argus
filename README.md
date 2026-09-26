@@ -1,6 +1,6 @@
 # Argus
 
-Argus is a local web application with two analysis workspaces: GitHub source-code security scanning and audio forensics. A React/Vite frontend talks to a FastAPI backend. The code scanner combines deterministic checks with signal-routed Google Gemini agents; the audio workflow analyzes recordings with digital signal processing and an optional local model.
+Argus is a web application with two analysis workspaces: GitHub source-code security scanning and audio forensics. A React/Vite frontend talks to a FastAPI backend. The code scanner combines deterministic checks with signal-routed Google Gemini agents; the audio workflow analyzes recordings with digital signal processing and an optional local model.
 
 ![Argus architecture](argus-module-communication.drawio.png)
 
