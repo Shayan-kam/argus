@@ -26,7 +26,7 @@ load_dotenv(BACKEND_DIR / ".env")
 GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-2.5-flash")
 GEMINI_FALLBACK_MODEL = os.getenv(
     "GEMINI_FALLBACK_MODEL",
-    "gemini-2.5-flash"
+    "gemini-2.5-flash-lite"
 )
 GEMINI_MAX_RETRIES = int(os.getenv("GEMINI_MAX_RETRIES", "4"))
 GEMINI_RETRY_BASE_DELAY = float(
@@ -104,6 +104,21 @@ def is_model_not_found_error(error):
     return (
         "not_found" in message
         and "model" in message
+    )
+
+
+def is_daily_quota_error(error):
+    """
+    Return True when the free daily request cap for this model is used up.
+
+    Waiting and retrying the same model cannot succeed until the quota resets.
+    """
+
+    message = str(error)
+
+    return (
+        "GenerateRequestsPerDay" in message
+        or "PerDayPerProjectPerModel" in message
     )
 
 
@@ -200,6 +215,13 @@ def run_gemini_agent(
                     print(
                         f"Gemini model {model_name} is unavailable "
                         f"(404). Trying next model..."
+                    )
+                    break
+
+                if is_daily_quota_error(error):
+                    print(
+                        f"Gemini model {model_name} has used its free "
+                        "daily request limit. Trying the next model..."
                     )
                     break
 
