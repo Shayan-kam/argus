@@ -72,6 +72,19 @@ AGENT_ROUTING_RULES = {
             "access_control",
             "race_conditions"
         ]
+    },
+
+    "CI/CD & Pipeline Security Agent": {
+        "required_any": [
+            "workflow_injection",
+            "ci_pipeline",
+            "container_misconfig"
+        ],
+        "supporting_signals": [
+            "privileged_execution",
+            "insecure_action",
+            "shell_execution"
+        ]
     }
 }
 
@@ -117,6 +130,15 @@ AGENT_SIGNAL_MAPPING = {
         "race_conditions",
         "native_code",
         "access_control"
+    ],
+
+    "CI/CD & Pipeline Security Agent": [
+        "workflow_injection",
+        "ci_pipeline",
+        "container_misconfig",
+        "privileged_execution",
+        "insecure_action",
+        "shell_execution"
     ]
 }
 
