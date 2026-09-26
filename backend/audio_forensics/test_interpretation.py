@@ -126,3 +126,18 @@ def test_conflicting_detectors_are_explained(unknown_audio):
     assert result["manipulation_type"] == "real"
     assert "disagree" in result["interpretation"]["headline"]
     assert "inconclusive" in result["interpretation"]["explanation"]
+
+
+def test_type_detector_without_synthetic_model_is_explained(tmp_path):
+    waveform, sample_rate = sf.read(SAMPLE)
+    target = tmp_path / "unknown.wav"
+    sf.write(target, waveform * 0.7, sample_rate)
+
+    class TypeDetector:
+        def predict_manipulation_type(self, features):
+            return "voice_conversion"
+
+    result = analyze_audio(str(target), manipulation_model=TypeDetector())
+    assert result["manipulation_type"] == "voice_conversion"
+    assert "type detector" in result["interpretation"]["headline"].lower()
+    assert "voice conversion" in result["interpretation"]["explanation"].lower()

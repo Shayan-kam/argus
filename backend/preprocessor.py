@@ -279,6 +279,7 @@ SIGNAL_PATTERNS = {
     "insecure_action": [
         r"uses:\s*[\w\-_]+/[\w\-_]+@(master|main|v[0-9]+(\.[0-9]+)*)\b",
     ],
+
     # Host / forwarded-host values taken from the request
     "host_header": [
         r"request\.host\b",
@@ -298,7 +299,7 @@ SIGNAL_PATTERNS = {
         r"\$_SERVER\[['\"]HTTP_HOST['\"]\]",
         r"\$_SERVER\[['\"]HTTP_X_FORWARDED_HOST['\"]\]",
         r"ServerName\b",
-        r"headers\[['\"][Hh]host['\"]\]"
+        r"headers\[['\"][Hh]ost['\"]\]"
     ],
 
     # Absolute URLs, password-reset links, and cache keys built from request context
@@ -342,7 +343,7 @@ SIGNAL_PATTERNS = {
         r"RedirectResponse",
         r"redirect\s*\(",
         r"werkzeug\.urls\.url_join"
-    ],
+    ]
 }
 
 

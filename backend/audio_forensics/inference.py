@@ -11,10 +11,12 @@ try:
     from .audio_preprocess import extract_forensic_features, preprocess_audio, segment_audio
     from .model import feature_vector_from_dict
     from .interpretation import assess_manipulation, explain_result
+    from .visualization import build_visual_analysis
 except ImportError:  # Direct script execution.
     from audio_preprocess import extract_forensic_features, preprocess_audio, segment_audio
     from model import feature_vector_from_dict
     from interpretation import assess_manipulation, explain_result
+    from visualization import build_visual_analysis
 
 DEFAULT_THRESHOLD = 0.5
 DEFAULT_SEGMENT_WINDOW_SECONDS = 4.0
@@ -106,12 +108,35 @@ def analyze_audio(
             score = _model_score(model, features) if model is not None else _fallback_signal_probability(features)
             segment_results.append({
                 "start": segment["start_time"], "end": segment["end_time"], "score": score,
+                "features": features,
             })
+        visual_analysis = build_visual_analysis(waveform, sample_rate)
+        visual_analysis["suspicious_regions"] = [
+            {
+                "start_time": float(segment["start"]),
+                "end_time": float(segment["end"]),
+                "score": float(segment["score"]),
+            }
+            for segment in segment_results
+            if segment["score"] >= threshold
+        ]
+        visual_analysis["waterfall"]["highlighted_regions"] = [
+            {
+                "start_time": region["start_time"],
+                "end_time": region["end_time"],
+            }
+            for region in visual_analysis["suspicious_regions"]
+        ]
         probability = aggregate_segment_scores(segment_results, aggregation, top_k)
         summary = {key: float(np.mean([record[key] for record in records])) for key in records[0]}
         manipulation = assess_manipulation(file_path, records, segment_results, manipulation_model)
         interpretation = explain_result(
-            summary, segment_results, probability, threshold, manipulation, trained=model is not None,
+            summary,
+            segment_results,
+            probability,
+            threshold,
+            manipulation,
+            trained=(model is not None or manipulation_model is not None),
         )
     except Exception as exc:
         # Model errors must remain visible instead of silently using a heuristic.
@@ -149,8 +174,16 @@ def analyze_audio(
         "segments": segment_results,
         "suspicious_segments": [segment for segment in segment_results if segment["score"] >= threshold],
         "techniques": techniques, "waveform": peaks,
-        "metadata": {"duration": processed["duration"], "sample_rate": sample_rate,
-                     "num_segments": len(segment_results)},
+        "feature_summary": summary,
+        "visual_analysis": visual_analysis,
+        "metadata": {
+            "duration": processed["duration"],
+            "sample_rate": sample_rate,
+            "num_segments": len(segment_results),
+            "segment_window_seconds": segment_window_seconds,
+            "segment_hop_seconds": hop_seconds,
+            "feature_summary_method": "Unweighted mean of overlapping section measurements",
+        },
     }
 
 
