@@ -92,6 +92,19 @@ def test_stereo_resampling(tmp_path):
     assert result["metadata"]["sample_rate"] == 16000
 
 
+def test_visual_analysis_includes_terrain_and_waterfall_data():
+    result = analyze_audio(str(SAMPLE))
+    terrain = result["visual_analysis"]["terrain"]
+    waterfall = result["visual_analysis"]["waterfall"]
+    assert 100 <= terrain["n_time_bins"] <= 250
+    assert 64 <= terrain["n_frequency_bins"] <= 128
+    assert len(terrain["surface"]) == terrain["n_frequency_bins"]
+    assert len(terrain["surface"][0]) == terrain["n_time_bins"]
+    assert len(waterfall["frames"]) == terrain["n_time_bins"]
+    assert "time_seconds" in terrain and "frequency_hz" in terrain
+    assert "suspicious_regions" in result["visual_analysis"]
+
+
 def test_model_result_and_model_failure(tmp_path):
     waveform, sample_rate = sf.read(SAMPLE)
     recording = tmp_path / "recording.wav"

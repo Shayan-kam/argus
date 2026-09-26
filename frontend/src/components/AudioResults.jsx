@@ -1,3 +1,5 @@
+import AudioVisualAnalysis from "./AudioVisualAnalysis";
+
 const decimal = new Intl.NumberFormat(undefined, { maximumFractionDigits: 1 });
 const rawNumber = (value) => {
     const number = Number(value);
@@ -144,6 +146,12 @@ export default function AudioResults({ result, onSeek }) {
                     ))}
                 </div>
             </section>
+
+            <AudioVisualAnalysis
+                visual={result.visual_analysis}
+                duration={result.metadata?.duration || 0}
+                onSeek={onSeek}
+            />
 
             <details className="audio-technical-details insight-panel" data-reveal>
                 <summary><span>Technical details <small>Measurements and what they mean</small></span></summary>
