@@ -36,6 +36,20 @@ function ScrollReveal() {
                     return;
                 }
 
+                if (node.closest("[hidden]")) {
+                    return;
+                }
+
+                const rect = node.getBoundingClientRect();
+                const inView = rect.height > 0
+                    && rect.bottom > 0
+                    && rect.top < window.innerHeight * 0.92;
+
+                if (inView) {
+                    node.classList.add("is-visible");
+                    return;
+                }
+
                 observer.observe(node);
             });
         };
@@ -45,10 +59,14 @@ function ScrollReveal() {
         const mutations = new MutationObserver(watch);
         mutations.observe(root, {
             childList: true,
-            subtree: true
+            subtree: true,
+            attributes: true,
+            attributeFilter: ["hidden"]
         });
+        window.addEventListener("scroll", watch, { passive: true });
 
         return () => {
+            window.removeEventListener("scroll", watch);
             mutations.disconnect();
             observer.disconnect();
         };

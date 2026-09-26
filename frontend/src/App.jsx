@@ -9,6 +9,7 @@ import AgentResultsPanel from "./components/AgentResultsPanel";
 import PreprocessingPanel from "./components/PreprocessingPanel";
 import FindingsSection from "./components/FindingsSection";
 import ScrollReveal from "./components/ScrollReveal";
+import AudioForensics from "./components/AudioForensics";
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:8000";
 
@@ -50,6 +51,7 @@ const INITIAL_PROGRESS = {
 };
 
 function App() {
+    const [workspace, setWorkspace] = useState("repository");
     const [repositoryUrl, setRepositoryUrl] = useState("");
     const [scanProfile, setScanProfile] = useState("standard");
     const [githubToken, setGithubToken] = useState("");
@@ -232,6 +234,30 @@ function App() {
                     </p>
                 </header>
 
+                <nav className="workspace-nav" data-reveal aria-label="Analysis workspace">
+                    <button
+                        type="button"
+                        className={workspace === "repository" ? "is-active" : ""}
+                        aria-pressed={workspace === "repository"}
+                        onClick={() => setWorkspace("repository")}
+                    >
+                        GitHub Security Analysis
+                    </button>
+                    <button
+                        type="button"
+                        className={workspace === "audio" ? "is-active" : ""}
+                        aria-pressed={workspace === "audio"}
+                        onClick={() => setWorkspace("audio")}
+                    >
+                        Audio Forensics
+                    </button>
+                </nav>
+
+                <div hidden={workspace !== "audio"}>
+                    <AudioForensics apiBaseUrl={API_BASE_URL} />
+                </div>
+
+                <div hidden={workspace !== "repository"}>
                 <ScanForm
                     repositoryUrl={repositoryUrl}
                     onRepositoryUrlChange={setRepositoryUrl}
@@ -317,6 +343,7 @@ function App() {
                         <FindingsSection findings={findings} />
                     </section>
                 )}
+                </div>
             </div>
         </div>
     );

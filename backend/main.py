@@ -25,6 +25,7 @@ from fastapi.responses import FileResponse, StreamingResponse
 from pydantic import BaseModel, Field
 
 from agents import ALL_AGENTS
+from audio_forensics.api import router as audio_router
 from github import clone_repository, normalize_github_url, summarize_repository
 from orchestrator import SecurityOrchestrator
 from report import generate_pdf_report
@@ -44,6 +45,7 @@ app.add_middleware(
     allow_headers=["*"]
 )
 
+app.include_router(audio_router)
 
 security_orchestrator = SecurityOrchestrator()
 
