@@ -26,7 +26,26 @@ SOURCE_EXTENSIONS = {
     ".cs",
     ".cpp",
     ".c",
-    ".sql"
+    ".sql",
+    ".html",
+    ".htm",
+    ".vue",
+    ".env",
+    ".yml",
+    ".yaml",
+    ".json",
+    ".xml",
+    ".ini",
+    ".toml",
+    ".properties",
+    ".conf"
+}
+
+
+IGNORED_FILE_NAMES = {
+    "package-lock.json",
+    "yarn.lock",
+    "pnpm-lock.yaml"
 }
 
 
@@ -71,8 +90,15 @@ def get_relevant_files(repository_path):
         ):
             continue
 
+        if path.name in IGNORED_FILE_NAMES:
+            continue
+
         # Only include supported source-code extensions.
-        if path.suffix.lower() not in SOURCE_EXTENSIONS:
+        # Dotfiles such as .env have an empty suffix, so the name is checked too.
+        if (
+            path.suffix.lower() not in SOURCE_EXTENSIONS
+            and path.name not in {".env", ".env.local"}
+        ):
             continue
 
         relevant_files.append(path)
@@ -106,8 +132,8 @@ def read_file_safely(file_path, repository_path):
 
         return None
 
-    # Limit the size of an individual file.
-    max_characters = 20000
+    # Keep enough of each file for a detailed review.
+    max_characters = 80000
 
     if len(content) > max_characters:
 
@@ -134,9 +160,8 @@ def collect_source_code(repository_path):
 
     files = get_relevant_files(repository_path)
 
-    # Temporary MVP limit.
-    max_files = 40
-    files = files[:max_files]
+    max_files = 150
+    files = sorted(files)[:max_files]
 
     source_files = []
 

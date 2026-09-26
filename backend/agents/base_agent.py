@@ -21,7 +21,7 @@ from findings import (
 load_dotenv()
 
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
-GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-3.8-flash")
+GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-2.5-flash")
 
 
 class AgentResponse(BaseModel):
@@ -119,6 +119,8 @@ If no vulnerability is found, return:
 Important requirements:
 
 - Report only vulnerabilities in your assigned category.
+- Inspect every provided file. Report each concrete issue, including Low and Medium findings, not only the most severe one.
+- A smaller weakness still counts when a specific line of code supports it.
 - Do not invent files, lines, or code.
 - Use exact relative paths from the supplied source.
 - Use accurate line numbers from the numbered source.

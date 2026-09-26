@@ -15,6 +15,7 @@ Pipeline:
 
 from concurrent.futures import ThreadPoolExecutor, as_completed
 import os
+import threading
 import time
 
 from repository import collect_source_code
@@ -35,6 +36,23 @@ from agents import (
     XSSAgent,
     SecretsAgent
 )
+
+
+def agent_progress_message(agent_name):
+    """
+    Turn an agent name into the live status shown while it runs.
+    """
+
+    labels = {
+        "SQL Injection Agent": "Checking for SQL injection",
+        "Cross-Site Scripting Agent": "Checking for cross-site scripting",
+        "Hardcoded Secrets Agent": "Checking for hardcoded secrets",
+    }
+
+    return labels.get(
+        agent_name,
+        f"Checking {agent_name}"
+    )
 
 
 class SecurityOrchestrator:
@@ -89,11 +107,15 @@ class SecurityOrchestrator:
         self,
         agent,
         all_source_files,
-        repository_analysis
+        repository_analysis,
+        on_start=None
     ):
         """
         Run one selected agent using focused source files.
         """
+
+        if on_start is not None:
+            on_start(agent)
 
         focused_source_files = (
             self.build_focused_source_files(
@@ -246,7 +268,8 @@ class SecurityOrchestrator:
     def analyze_repository(
         self,
         repository_path,
-        scan_profile="standard"
+        scan_profile="standard",
+        on_progress=None
     ):
         """
         Analyze a repository using the selected scan profile.
@@ -269,6 +292,23 @@ class SecurityOrchestrator:
                 "Choose quick, standard, or deep."
             )
 
+        includes_agents = scan_profile != "quick"
+
+        def report(percent, ceiling, message):
+            if on_progress is None:
+                return
+
+            bounded_percent = max(0, min(100, percent))
+            bounded_ceiling = max(
+                bounded_percent,
+                min(100, ceiling)
+            )
+            on_progress(
+                bounded_percent,
+                bounded_ceiling,
+                message
+            )
+
         total_start_time = time.perf_counter()
 
         # ---------------------------------------------------------
@@ -276,6 +316,11 @@ class SecurityOrchestrator:
         # ---------------------------------------------------------
 
         collection_start_time = time.perf_counter()
+
+        if includes_agents:
+            report(12, 20, "Collecting source files")
+        else:
+            report(16, 34, "Collecting source files")
 
         print("\nCollecting source files...")
 
@@ -297,6 +342,16 @@ class SecurityOrchestrator:
         # ---------------------------------------------------------
 
         preprocessing_start_time = time.perf_counter()
+
+        file_count = len(source_files)
+        signal_message = (
+            f"Scanning {file_count} files for security signals"
+        )
+
+        if includes_agents:
+            report(20, 28, signal_message)
+        else:
+            report(34, 52, signal_message)
 
         print("\nPreprocessing repository...")
 
@@ -331,6 +386,15 @@ class SecurityOrchestrator:
 
         rules_start_time = time.perf_counter()
 
+        rules_message = (
+            f"Running security rules on {file_count} files"
+        )
+
+        if includes_agents:
+            report(28, 36, rules_message)
+        else:
+            report(52, 78, rules_message)
+
         print("\nRunning deterministic rules...")
 
         rule_findings = run_rule_based_scans(
@@ -351,6 +415,8 @@ class SecurityOrchestrator:
         # ---------------------------------------------------------
 
         if scan_profile == "quick":
+            report(78, 90, "Merging findings")
+
             result = self.build_quick_scan_result(
                 source_files=source_files,
                 repository_analysis=repository_analysis,
@@ -387,6 +453,8 @@ class SecurityOrchestrator:
         # ---------------------------------------------------------
 
         routing_start_time = time.perf_counter()
+
+        report(36, 44, "Choosing which checks to run")
 
         selected_agents, skipped_agents = (
             select_relevant_agents(
@@ -431,6 +499,62 @@ class SecurityOrchestrator:
                 f"selected agent(s) concurrently..."
             )
 
+            agent_span_start = 44
+            agent_span_end = 90
+            agent_span = agent_span_end - agent_span_start
+            total_agents = len(selected_agents)
+            finished_agents = 0
+            running_agents = []
+            progress_lock = threading.Lock()
+
+            def publish_agent_progress():
+                percent = (
+                    agent_span_start
+                    + (finished_agents / total_agents) * agent_span
+                )
+
+                if running_agents:
+                    upcoming = (
+                        agent_span_start
+                        + (
+                            (finished_agents + 1) / total_agents
+                        ) * agent_span
+                    )
+                    ceiling = max(percent + 1, upcoming - 0.8)
+
+                    if len(running_agents) == 1:
+                        message = agent_progress_message(
+                            running_agents[0]
+                        )
+                    else:
+                        details = [
+                            agent_progress_message(name).removeprefix(
+                                "Checking for "
+                            )
+                            for name in running_agents
+                        ]
+                        message = "Checking " + " and ".join(details)
+                else:
+                    ceiling = min(agent_span_end, percent + 1)
+                    message = "Finishing security checks"
+
+                report(percent, ceiling, message)
+
+            def handle_agent_start(agent):
+                with progress_lock:
+                    running_agents.append(agent.name)
+                    publish_agent_progress()
+
+            def handle_agent_finish(agent_name):
+                nonlocal finished_agents
+
+                with progress_lock:
+                    if agent_name in running_agents:
+                        running_agents.remove(agent_name)
+
+                    finished_agents += 1
+                    publish_agent_progress()
+
             # Keep Gemini request concurrency conservative by default;
             # raise the environment setting after checking project limits.
             max_workers = min(
@@ -454,7 +578,8 @@ class SecurityOrchestrator:
                         self.run_one_agent,
                         agent,
                         source_files,
-                        repository_analysis
+                        repository_analysis,
+                        handle_agent_start
                     )
 
                     future_to_agent[future] = agent
@@ -495,7 +620,12 @@ class SecurityOrchestrator:
                             "reason": str(error)
                         })
 
+                    finally:
+                        handle_agent_finish(agent.name)
+
         else:
+            report(44, 90, "No extra security checks needed")
+
             print(
                 "\nNo relevant AI agents selected. "
                 "Skipping all LLM analysis."
@@ -504,6 +634,8 @@ class SecurityOrchestrator:
         # ---------------------------------------------------------
         # Stage 6: Merge and deduplicate findings
         # ---------------------------------------------------------
+
+        report(90, 94, "Merging findings")
 
         all_findings = (
             rule_findings +

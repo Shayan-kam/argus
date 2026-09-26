@@ -6,6 +6,18 @@ import FindingCard from "./components/FindingCard";
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:8000";
 
+const INITIAL_PROGRESS = {
+    percent: 1,
+    message: "Starting the scan",
+    updates: [
+        {
+            id: 1,
+            message: "Starting the scan",
+            current: true
+        }
+    ]
+};
+
 function App() {
     const [repositoryUrl, setRepositoryUrl] = useState("");
     const [loading, setLoading] = useState(false);
@@ -13,6 +25,7 @@ function App() {
     const [findings, setFindings] = useState([]);
     const [scanId, setScanId] = useState(null);
     const [scanData, setScanData] = useState(null);
+    const [progress, setProgress] = useState(INITIAL_PROGRESS);
 
     async function analyzeRepository() {
         setError("");
@@ -25,6 +38,7 @@ function App() {
             return;
         }
 
+        setProgress(INITIAL_PROGRESS);
         setLoading(true);
 
         try {
@@ -39,15 +53,90 @@ function App() {
                 })
             });
 
-            const data = await response.json();
-
             if (!response.ok) {
-                throw new Error(data.detail || "Analysis failed.");
+                const data = await response.json();
+                const detail = data.detail;
+                const message = typeof detail === "string"
+                    ? detail
+                    : "Analysis failed.";
+                throw new Error(message);
             }
 
-            setScanData(data);
-            setFindings(data.findings || []);
-            setScanId(data.scan_id);
+            if (!response.body) {
+                throw new Error("The scan did not return progress updates.");
+            }
+
+            const reader = response.body.getReader();
+            const decoder = new TextDecoder();
+            let buffer = "";
+            let completed = false;
+
+            while (!completed) {
+                const { value, done } = await reader.read();
+
+                if (done) {
+                    break;
+                }
+
+                buffer += decoder.decode(value, { stream: true });
+                const chunks = buffer.split("\n\n");
+                buffer = chunks.pop() || "";
+
+                for (const chunk of chunks) {
+                    const line = chunk
+                        .split("\n")
+                        .find((entry) => entry.startsWith("data: "));
+
+                    if (!line) {
+                        continue;
+                    }
+
+                    const event = JSON.parse(line.slice(6));
+
+                    if (event.type === "progress") {
+                        setProgress((current) => {
+                            const nextMessage = event.message || current.message;
+                            const messageChanged = nextMessage !== current.message;
+                            const updates = messageChanged
+                                ? [
+                                    ...current.updates.map((item) => ({
+                                        ...item,
+                                        current: false
+                                    })),
+                                    {
+                                        id: current.updates.length + 1,
+                                        message: nextMessage,
+                                        current: true
+                                    }
+                                ]
+                                : current.updates;
+
+                            return {
+                                percent: Math.max(current.percent, event.percent || 0),
+                                message: nextMessage,
+                                updates
+                            };
+                        });
+                        continue;
+                    }
+
+                    if (event.type === "error") {
+                        throw new Error(event.detail || "Analysis failed.");
+                    }
+
+                    if (event.type === "complete") {
+                        const data = event.result || {};
+                        setScanData(data);
+                        setFindings(data.findings || []);
+                        setScanId(data.scan_id);
+                        completed = true;
+                    }
+                }
+            }
+
+            if (!completed) {
+                throw new Error("The scan ended before it finished.");
+            }
         } catch (err) {
             setError(err.message || "Something went wrong.");
         } finally {
@@ -131,27 +220,36 @@ function App() {
                 </div>
 
                 {loading && (
-                    <div className="loading-panel" aria-live="polite">
-                        <div className="loading-visual">
-                            <div className="orbit orbit-one" />
-                            <div className="orbit orbit-two" />
-                            <div className="core" />
+                    <div className="loading-panel progress-panel" aria-live="polite">
+                        <div className="progress-copy">
+                            <p className="section-eyebrow">ANALYSIS IN PROGRESS</p>
+                            <h3>{progress.message}</h3>
                         </div>
 
-                        <div className="loading-copy">
-                            <h3>Running repo analysis</h3>
-                            <p>
-                                Cloning the repository, detecting signals, routing agents,
-                                and evaluating the highest-risk code paths.
-                            </p>
+                        <div
+                            className="progress-track"
+                            role="progressbar"
+                            aria-valuemin={0}
+                            aria-valuemax={100}
+                            aria-valuenow={Math.round(progress.percent)}
+                            aria-label={progress.message}
+                        >
+                            <div
+                                className="progress-fill"
+                                style={{ width: `${Math.min(progress.percent, 100)}%` }}
+                            />
                         </div>
 
-                        <div className="loading-steps">
-                            <span className="step active">Fetch</span>
-                            <span className="step active">Signal scan</span>
-                            <span className="step active">Agent review</span>
-                            <span className="step">Report</span>
-                        </div>
+                        <ul className="progress-log">
+                            {progress.updates.map((update) => (
+                                <li
+                                    key={update.id}
+                                    className={update.current ? "current" : "done"}
+                                >
+                                    {update.message}
+                                </li>
+                            ))}
+                        </ul>
                     </div>
                 )}
 
