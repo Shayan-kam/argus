@@ -11,6 +11,7 @@ import PreprocessingPanel from "./components/PreprocessingPanel";
 import FindingsSection from "./components/FindingsSection";
 import ScrollReveal from "./components/ScrollReveal";
 import AudioForensics from "./components/AudioForensics";
+import MoltenMetal from "./components/MoltenMetal";
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:8000";
 
@@ -246,10 +247,15 @@ function App() {
             <div className="container">
                 <header className="hero-panel" data-reveal>
                     <div className="brand-row">
-                        <img className="brand-mark" src={argusLogo} alt="Argus" />
+                        <img className="brand-mark" src={argusLogo} alt="ARGUS" />
                         <div>
                             <p className="eyebrow">AI SECURITY ANALYSIS</p>
-                            <h1>Argus</h1>
+                            <h1 className="brand-title" tabIndex={0}>
+                                <span className="brand-title-text">ARGUS</span>
+                                <span className="brand-title-expand">
+                                    Agentic Risk Guard &amp; Unified Security
+                                </span>
+                            </h1>
                         </div>
                     </div>
 
