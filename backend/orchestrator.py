@@ -31,11 +31,7 @@ from rules import run_rule_based_scans
 
 from findings import deduplicate_findings
 
-from agents import (
-    SQLInjectionAgent,
-    XSSAgent,
-    SecretsAgent
-)
+from agents import ALL_AGENTS
 
 
 def agent_progress_message(agent_name):
@@ -47,6 +43,8 @@ def agent_progress_message(agent_name):
         "SQL Injection Agent": "Checking for SQL injection",
         "Cross-Site Scripting Agent": "Checking for cross-site scripting",
         "Hardcoded Secrets Agent": "Checking for hardcoded secrets",
+        "Binary Exploitation Agent": "Checking for binary exploitation",
+        "Reverse Engineering Agent": "Checking for reverse-engineering issues",
     }
 
     return labels.get(
@@ -62,9 +60,8 @@ class SecurityOrchestrator:
 
     def __init__(self):
         self.agents = [
-            SQLInjectionAgent(),
-            XSSAgent(),
-            SecretsAgent()
+            agent_class()
+            for agent_class in ALL_AGENTS
         ]
 
     def build_focused_source_files(
@@ -555,14 +552,15 @@ class SecurityOrchestrator:
                     finished_agents += 1
                     publish_agent_progress()
 
-            # Keep Gemini request concurrency conservative by default;
-            # raise the environment setting after checking project limits.
+            # Limit concurrency to reduce Gemini rate-limit spikes.
+            max_concurrent = int(
+                os.getenv("GEMINI_MAX_CONCURRENT")
+                or os.getenv("GEMINI_MAX_CONCURRENT_AGENTS", "1")
+            )
+
             max_workers = min(
                 len(selected_agents),
-                max(
-                    1,
-                    int(os.getenv("GEMINI_MAX_CONCURRENT_AGENTS", "1"))
-                )
+                max(1, max_concurrent)
             )
 
             with ThreadPoolExecutor(
@@ -571,8 +569,12 @@ class SecurityOrchestrator:
 
                 future_to_agent = {}
 
-                for selected_agent in selected_agents:
+                for index, selected_agent in enumerate(selected_agents):
                     agent = selected_agent["agent"]
+
+                    # Stagger submissions to avoid thundering herd.
+                    if index > 0:
+                        time.sleep(0.5)
 
                     future = executor.submit(
                         self.run_one_agent,

@@ -1,60 +1,95 @@
-argus/
-│
-├── backend/
-│   │
-│   ├── main.py
-│   ├── agent.py
-│   ├── repository.py
-│   ├── github.py
-│   ├── findings.py
-│   ├── report.py
-│   ├── rules.py
-│   ├── orchestrator.py
-│   ├── preprocessor.py
-│   ├── routing.py
-│   ├── timing.py
-│   ├── requirements.txt
-│   ├── .env
-│   │
-│   └── agents/
-│       ├── __init__.py
-│       ├── base_agent.py
-│       ├── sql_injection.py
-│       ├── xss.py
-│       └── secrets.py
-│
-└── frontend/
-    ├── package.json
-    ├── src/
-    │   ├── App.jsx
-    │   ├── main.jsx
-    │   └── ...
-    └── ...
+# Argus
 
-Move towards: 
+AI-powered source code security scanner for GitHub repositories.
 
+## Architecture
+
+```
 Repository
     ↓
-Security Agent
+Preprocessor (signal detection)
     ↓
-search_code()
-read_file()
-get_file_context()
+Agent Router (select relevant agents)
     ↓
-Relevant code
+Gemini Agents (SQLi, XSS, Secrets, Pwn, Rev)
     ↓
-LLM
+Findings + PDF Report
+```
 
+## Agents
 
-For example:
+| Agent | Category | Triggers |
+|-------|----------|----------|
+| SQL Injection | web | sql_query, database_execution |
+| Cross-Site Scripting | web | javascript_dom, html_template |
+| Hardcoded Secrets | secrets | secret_like_content |
+| Binary Exploitation | pwn | memory_unsafe, native_code |
+| Reverse Engineering | rev | unsafe_deserialization, binary_format |
 
-"Find SQL queries"
-       ↓
-search repository
-       ↓
-5 relevant files
-       ↓
-read those files
-       ↓
-LLM
+## Setup
 
+### Backend
+
+```bash
+cd backend
+pip install -r requirements.txt
+```
+
+Create `backend/.env`:
+
+```
+GEMINI_API_KEY=your-gemini-api-key
+GEMINI_MODEL=gemini-3.8-flash
+GEMINI_FALLBACK_MODEL=gemini-2.5-flash
+GEMINI_MAX_RETRIES=4
+GEMINI_MAX_CONCURRENT=2
+
+# Optional — for private repos without passing token in API requests
+GITHUB_TOKEN=ghp_...
+```
+
+Run:
+
+```bash
+uvicorn main:app --reload --port 8000
+```
+
+### Frontend
+
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+## Private Repositories
+
+Private GitHub repos are supported via a personal access token with the **`repo`** scope.
+
+**Option 1 — API request:** Pass `github_token` in the analyze request body.
+
+**Option 2 — Environment variable:** Set `GITHUB_TOKEN` in `backend/.env`.
+
+The token is used only during `git clone` and is not stored.
+
+## API Endpoints
+
+| Method | Path | Description |
+|--------|------|-------------|
+| GET | `/api/health` | Health check |
+| GET | `/api/agents` | List available agents |
+| GET | `/api/capabilities` | Scan profiles and access options |
+| POST | `/api/analyze` | Clone and analyze a repository |
+| GET | `/api/report/{scan_id}` | Download PDF report |
+
+### Analyze request
+
+```json
+{
+  "repository_url": "https://github.com/owner/repo",
+  "scan_profile": "standard",
+  "github_token": "optional-for-private-repos"
+}
+```
+
+Scan profiles: `quick` (rules only), `standard`, `deep`.
