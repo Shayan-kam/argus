@@ -8,6 +8,7 @@ import AgentRoutingPanel from "./components/AgentRoutingPanel";
 import AgentResultsPanel from "./components/AgentResultsPanel";
 import PreprocessingPanel from "./components/PreprocessingPanel";
 import FindingsSection from "./components/FindingsSection";
+import MoltenMetal from "./components/MoltenMetal";
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:8000";
 
@@ -214,6 +215,28 @@ function App() {
 
     return (
         <div className="app-shell">
+            <div className="visual-backdrop" aria-hidden="true">
+                <MoltenMetal
+                    color1="#0c2650"
+                    color2="#103571"
+                    color3="#739fe9"
+                    speed={0.35}
+                    scale={4}
+                    detail={3}
+                    glow={1.6}
+                    coreSize={0.1}
+                    swirl={1}
+                    fold={-0.2}
+                    blackPoint={0.05}
+                    brightness={1.3}
+                    colorMode="molten"
+                    grain={true}
+                    grainIntensity={0.05}
+                    mouseInteraction={true}
+                    mouseStrength={0.2}
+                    opacity={1.0}
+                />
+            </div>
             <div className="container">
                 <header className="hero-panel">
                     <div className="brand-row">
