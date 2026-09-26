@@ -101,6 +101,7 @@ def assess_manipulation(file_path, records, segments, model=None):
 def explain_result(summary, segments, probability, threshold, manipulation, trained=False):
     flagged = sum(segment["score"] >= threshold for segment in segments)
     known_demo = manipulation["status"] == "known_source"
+    type_prediction = manipulation.get("status") == "predicted"
     if known_demo:
         title = "You're listening to generated test audio"
         explanation = "This demo contains computer-made tones, not a person's voice. Its origin is known from the demo file; the review score is only an example of the checker's output."
@@ -110,6 +111,13 @@ def explain_result(summary, segments, probability, threshold, manipulation, trai
     ):
         title = "The checks disagree about this recording"
         explanation = "The overall audio check and the type detector give conflicting predictions. Treat the result as inconclusive and review the recording."
+    elif type_prediction:
+        label = manipulation.get("label") or manipulation.get("type") or "the detected manipulation"
+        title = f"The type detector suggests {label.lower()}"
+        explanation = (
+            f"The type detector identified {label} across the checked sections. "
+            "This is a model prediction, not a verified authenticity claim."
+        )
     elif trained:
         title = "The model leans toward generated audio" if probability >= threshold else "The model leans toward recorded audio"
         explanation = "This is the model's estimate for the recording. The manipulation assessment below separately explains whether a particular type could be identified."

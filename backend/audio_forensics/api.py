@@ -5,6 +5,8 @@ import math
 import os
 import tempfile
 import time
+import uuid
+from datetime import datetime, timezone
 from functools import lru_cache
 from pathlib import Path
 
@@ -91,6 +93,7 @@ def sample_audio():
 @router.post("/analyze")
 def analyze_uploads(files: list[UploadFile] = File(...)):
     started = time.perf_counter()
+    analysis_id = str(uuid.uuid4())
     try:
         if not 1 <= len(files) <= MAX_FILES:
             raise HTTPException(status_code=400, detail=f"Choose between 1 and {MAX_FILES} audio files.")
@@ -104,6 +107,7 @@ def analyze_uploads(files: list[UploadFile] = File(...)):
         results = []
         with tempfile.TemporaryDirectory(prefix="argus_audio_") as folder:
             for index, upload in enumerate(files):
+                file_started = time.perf_counter()
                 filename = (upload.filename or f"audio-{index + 1}").replace("\\", "/").split("/")[-1]
                 # Client filenames are metadata only, never server paths.
                 suffix = Path(filename).suffix.lower()
@@ -126,7 +130,19 @@ def analyze_uploads(files: list[UploadFile] = File(...)):
                     destination.unlink(missing_ok=True)
                 if result.get("error"):
                     logger.warning("Audio analysis error for %s: %s", filename, result["error"])
-                results.append(_json_ready({"filename": filename, **result}))
+                metadata = result.setdefault("metadata", {})
+                metadata.update({
+                    "input_size_bytes": upload.size if upload.size is not None else total,
+                    "filename_extension": Path(filename).suffix.lower(),
+                    "analysis_seconds": round(time.perf_counter() - file_started, 4),
+                })
+                results.append(_json_ready({
+                    "filename": filename,
+                    "file_id": f"{analysis_id}:{index + 1}",
+                    "analysis_id": analysis_id,
+                    "analyzed_at_utc": datetime.now(timezone.utc).isoformat(),
+                    **result,
+                }))
         return {"results": results, "total_seconds": round(time.perf_counter() - started, 3)}
     finally:
         for upload in files:
