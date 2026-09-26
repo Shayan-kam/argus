@@ -57,6 +57,18 @@ AGENT_ROUTING_RULES = {
             "native_code",
             "authentication"
         ]
+    },
+
+    "Low-Level & Memory Security Agent": {
+        "required_any": [
+            "memory_allocation",
+            "buffer_manipulation",
+            "memory_unsafe"
+        ],
+        "supporting_signals": [
+            "native_code",
+            "access_control"
+        ]
     }
 }
 
@@ -91,6 +103,14 @@ AGENT_SIGNAL_MAPPING = {
         "binary_format",
         "native_code",
         "authentication"
+    ],
+
+    "Low-Level & Memory Security Agent": [
+        "memory_allocation",
+        "buffer_manipulation",
+        "memory_unsafe",
+        "native_code",
+        "access_control"
     ]
 }
 
