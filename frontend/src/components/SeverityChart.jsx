@@ -115,7 +115,7 @@ function SeverityChart({ summary }) {
   ];
 
   return (
-    <section className="chart-panel">
+    <section className="chart-panel" data-reveal>
       <div className="section-heading">
         <div>
           <p className="section-eyebrow">VULNERABILITY BREAKDOWN</p>

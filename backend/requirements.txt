@@ -4,3 +4,10 @@ python-dotenv
 pydantic
 reportlab
 google-genai
+numpy
+librosa>=0.10
+soundfile>=0.13
+imageio-ffmpeg>=0.6
+scikit-learn
+joblib
+python-multipart

@@ -17,7 +17,7 @@ function ScanForm({
     onSubmit
 }) {
     return (
-        <section className="scan-form">
+        <section className="scan-form" data-reveal>
             <div className="input-section">
                 <input
                     type="text"

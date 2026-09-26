@@ -13,7 +13,7 @@ function FindingCard({ finding }) {
   ).toLowerCase();
 
   return (
-    <article className="finding-card">
+    <article className="finding-card" data-reveal>
       <div className="finding-header">
         <div className="finding-title-section">
           <h3>{finding.title}</h3>
