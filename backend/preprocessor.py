@@ -248,6 +248,38 @@ SIGNAL_PATTERNS = {
         r"\.globl\s+"
     ],
 
+    # CI/CD Workflow & Pipeline Security Signals
+    "workflow_injection": [
+        r"\$\{\{\s*github\.event\.(issue|pull_request|comment|head_commit|review)",
+        r"\$\{\{\s*github\.head_ref\s*\}\}",
+        r"\$\{\{\s*inputs\.",
+    ],
+
+    "ci_pipeline": [
+        r"\bpull_request_target\b",
+        r"permissions:\s*write-all",
+        r"actions/checkout@",
+        r"\.github/workflows",
+        r"gitlab-ci\.yml",
+    ],
+
+    "container_misconfig": [
+        r"/var/run/docker\.sock",
+        r"privileged:\s*true",
+        r"network_mode:\s*[\"']?host[\"']?",
+        r"cap_add:\s*.*SYS_ADMIN",
+    ],
+
+    "privileged_execution": [
+        r"^\s*USER\s+root\b",
+        r"\bsudo\s+[\w\-]+",
+        r"--privileged",
+    ],
+
+    "insecure_action": [
+        r"uses:\s*[\w\-_]+/[\w\-_]+@(master|main|v[0-9]+(\.[0-9]+)*)\b",
+    ],
+
     # Host / forwarded-host values taken from the request
     "host_header": [
         r"request\.host\b",
@@ -317,13 +349,14 @@ SIGNAL_PATTERNS = {
 
 def detect_languages(source_files):
     """
-    Identify languages based on file extensions.
+    Identify languages based on file extensions and manifest filenames.
     """
 
     languages = set()
 
     for source_file in source_files:
         file_path = Path(source_file["file"])
+        filename = file_path.name.lower()
         extension = file_path.suffix.lower()
 
         extension_to_language = {
@@ -345,11 +378,15 @@ def detect_languages(source_files):
             ".rs": "rust",
             ".asm": "assembly",
             ".s": "assembly",
-            ".sql": "sql"
+            ".sql": "sql",
+            ".yml": "yaml",
+            ".yaml": "yaml",
         }
 
         if extension in extension_to_language:
             languages.add(extension_to_language[extension])
+        elif "dockerfile" in filename:
+            languages.add("dockerfile")
 
     return sorted(languages)
 
