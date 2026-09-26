@@ -112,13 +112,19 @@ def analyze_audio(
             })
         visual_analysis = build_visual_analysis(waveform, sample_rate)
         visual_analysis["suspicious_regions"] = [
-            {"start_time": float(segment["start"]), "end_time": float(segment["end"]), "score": float(segment["score"])}
-            for segment in segment_results if segment["score"] >= threshold
+            {
+                "start_time": float(segment["start"]),
+                "end_time": float(segment["end"]),
+                "score": float(segment["score"]),
+            }
+            for segment in segment_results
+            if segment["score"] >= threshold
         ]
-        if not visual_analysis["suspicious_regions"]:
-            visual_analysis["suspicious_regions"] = []
         visual_analysis["waterfall"]["highlighted_regions"] = [
-            {"start_time": region["start_time"], "end_time": region["end_time"]}
+            {
+                "start_time": region["start_time"],
+                "end_time": region["end_time"],
+            }
             for region in visual_analysis["suspicious_regions"]
         ]
         probability = aggregate_segment_scores(segment_results, aggregation, top_k)
@@ -168,11 +174,16 @@ def analyze_audio(
         "segments": segment_results,
         "suspicious_segments": [segment for segment in segment_results if segment["score"] >= threshold],
         "techniques": techniques, "waveform": peaks,
-        "feature_summary": summary, "visual_analysis": visual_analysis,
-        "metadata": {"duration": processed["duration"], "sample_rate": sample_rate,
-                     "num_segments": len(segment_results),
-                     "segment_window_seconds": segment_window_seconds, "segment_hop_seconds": hop_seconds,
-                     "feature_summary_method": "Unweighted mean of overlapping section measurements"},
+        "feature_summary": summary,
+        "visual_analysis": visual_analysis,
+        "metadata": {
+            "duration": processed["duration"],
+            "sample_rate": sample_rate,
+            "num_segments": len(segment_results),
+            "segment_window_seconds": segment_window_seconds,
+            "segment_hop_seconds": hop_seconds,
+            "feature_summary_method": "Unweighted mean of overlapping section measurements",
+        },
     }
 
 

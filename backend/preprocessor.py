@@ -119,6 +119,66 @@ SIGNAL_PATTERNS = {
         r"bearer"
     ],
 
+    # Low-level dynamic memory allocation routines
+    "memory_allocation": [
+        r"\bmalloc\s*\(",
+        r"\bcalloc\s*\(",
+        r"\brealloc\s*\(",
+        r"\balloca\s*\(",
+        r"\bnew\s+[\w\[\]]+",
+    ],
+
+    # Memory lifecycle, deallocation, and deletion
+    "memory_lifecycle": [
+        r"\bfree\s*\(",
+        r"\bdelete\s+[\w\[\]]+",
+        r"\bdelete\[\]",
+    ],
+
+    # Dynamic allocation sizing with arithmetic operations (overflows/wraparounds)
+    "alloc_arithmetic": [
+        r"\bmalloc\s*\([^)]*[\*\+\-][^)]*\)",
+        r"\bcalloc\s*\([^)]*[\*\+\-][^)]*\)",
+        r"\brealloc\s*\([^,]+,\s*[^)]*[\*\+\-][^)]*\)",
+    ],
+
+    # Filesystem check-then-use conditions vulnerable to TOCTOU races
+    "race_conditions": [
+        r"\baccess\s*\(",
+        r"\bstat\s*\(",
+        r"\blstat\s*\(",
+        r"\bfstat\s*\(",
+    ],
+
+    # String, pointer, and bounded buffer operations
+    "buffer_manipulation": [
+        r"\bstrcpy\s*\(",
+        r"\bstrcat\s*\(",
+        r"\bstrncpy\s*\(",
+        r"\bstrncat\s*\(",
+        r"\bgets\s*\(",
+        r"\bsprintf\s*\(",
+        r"\bsnprintf\s*\(",
+        r"\bvsprintf\s*\(",
+        r"\bmemcpy\s*\(",
+        r"\bmemmove\s*\(",
+        r"\bmemset\s*\(",
+        r"\bscanf\s*\("
+    ],
+
+    # Low-level permission, identity, and access checks
+    "access_control": [
+        r"\bsetuid\s*\(",
+        r"\bseteuid\s*\(",
+        r"\bsetgid\s*\(",
+        r"\bsetegid\s*\(",
+        r"\bchmod\s*\(",
+        r"\bfchmod\s*\(",
+        r"\bchown\s*\(",
+        r"\bsetgroups\s*\(",
+        r"\bcap_set_proc\b"
+    ],
+
     "memory_unsafe": [
         r"\bstrcpy\s*\(",
         r"\bstrcat\s*\(",
@@ -186,6 +246,71 @@ SIGNAL_PATTERNS = {
         r"\bret\b",
         r"\.section\s+",
         r"\.globl\s+"
+    ],
+
+    # Host / forwarded-host values taken from the request
+    "host_header": [
+        r"request\.host\b",
+        r"request\.get_host\s*\(",
+        r"request\.headers\[['\"]Host['\"]\]",
+        r"request\.headers\.get\(['\"]Host['\"]",
+        r"req\.headers\[['\"]host['\"]\]",
+        r"req\.headers\.host\b",
+        r"req\.get\(['\"]host['\"]",
+        r"req\.hostname\b",
+        r"HTTP_HOST",
+        r"X-Forwarded-Host",
+        r"X_FORWARDED_HOST",
+        r"getHeader\(['\"]host['\"]",
+        r"getHttpHost\s*\(",
+        r"get_host_info\s*\(",
+        r"\$_SERVER\[['\"]HTTP_HOST['\"]\]",
+        r"\$_SERVER\[['\"]HTTP_X_FORWARDED_HOST['\"]\]",
+        r"ServerName\b",
+        r"headers\[['\"][Hh]ost['\"]\]"
+    ],
+
+    # Absolute URLs, password-reset links, and cache keys built from request context
+    "absolute_url_from_request": [
+        r"url_for\([^)]*_external\s*=\s*True",
+        r"request\.url_root",
+        r"request\.base_url",
+        r"request\.url\b",
+        r"build_absolute_uri\s*\(",
+        r"password[_-]?reset",
+        r"reset[_-]?password",
+        r"reset[_-]?link",
+        r"reset[_-]?url",
+        r"verification[_-]?link",
+        r"confirm[_-]?email",
+        r"magic[_-]?link",
+        r"invite[_-]?link",
+        r"https?://['\"].*\+",
+        r"f['\"]https?://",
+        r"`https?://",
+        r"\$\{[^}]*host[^}]*\}",
+        r"scheme\s*\+\s*.*host",
+        r"getSchemeAndHttpHost\s*\(",
+        r"cache[_-]?key",
+        r"Vary:\s*Host"
+    ],
+
+    # Writing response headers that can carry Host or CRLF injection
+    "response_header_write": [
+        r"['\"]Location['\"]\s*[:=]",
+        r"Set-Cookie",
+        r"setHeader\s*\(",
+        r"set_header\s*\(",
+        r"add_header\s*\(",
+        r"headers\[['\"]Location['\"]\]",
+        r"response\.headers",
+        r"res\.set\s*\(",
+        r"res\.header\s*\(",
+        r"res\.setHeader\s*\(",
+        r"HttpResponseRedirect",
+        r"RedirectResponse",
+        r"redirect\s*\(",
+        r"werkzeug\.urls\.url_join"
     ]
 }
 

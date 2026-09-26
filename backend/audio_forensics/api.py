@@ -1,6 +1,7 @@
 """HTTP integration for the audio pipeline; repository routes remain independent."""
 
 import logging
+import math
 import os
 import tempfile
 import time
@@ -8,6 +9,8 @@ import uuid
 from datetime import datetime, timezone
 from functools import lru_cache
 from pathlib import Path
+
+import numpy as np
 
 from fastapi import APIRouter, File, HTTPException, UploadFile
 from fastapi.responses import FileResponse
@@ -17,6 +20,21 @@ PACKAGE_DIR = Path(__file__).resolve().parent
 MAX_FILES = 20
 MAX_FILE_BYTES = 50 * 1024 * 1024
 logger = logging.getLogger(__name__)
+
+
+def _json_ready(value):
+    """Keep browser JSON.parse from rejecting NaN or Infinity in a 200 response."""
+    if isinstance(value, dict):
+        return {key: _json_ready(item) for key, item in value.items()}
+    if isinstance(value, (list, tuple)):
+        return [_json_ready(item) for item in value]
+    if isinstance(value, np.ndarray):
+        return _json_ready(value.tolist())
+    if isinstance(value, np.generic):
+        value = value.item()
+    if isinstance(value, float) and not math.isfinite(value):
+        return None
+    return value
 
 
 @lru_cache(maxsize=1)
@@ -106,20 +124,25 @@ def analyze_uploads(files: list[UploadFile] = File(...)):
                             output.write(chunk)
                     result = analyze_audio(str(destination), model=model, manipulation_model=manipulation)
                 except Exception as exc:
+                    logger.exception("Audio analysis failed for %s", filename)
                     result = error_result(str(exc))
                 finally:
                     destination.unlink(missing_ok=True)
-                result["metadata"].update({
+                if result.get("error"):
+                    logger.warning("Audio analysis error for %s: %s", filename, result["error"])
+                metadata = result.setdefault("metadata", {})
+                metadata.update({
                     "input_size_bytes": upload.size if upload.size is not None else total,
                     "filename_extension": Path(filename).suffix.lower(),
                     "analysis_seconds": round(time.perf_counter() - file_started, 4),
                 })
-                results.append({
-                    "filename": filename, "file_id": f"{analysis_id}:{index + 1}",
+                results.append(_json_ready({
+                    "filename": filename,
+                    "file_id": f"{analysis_id}:{index + 1}",
                     "analysis_id": analysis_id,
                     "analyzed_at_utc": datetime.now(timezone.utc).isoformat(),
                     **result,
-                })
+                }))
         return {"results": results, "total_seconds": round(time.perf_counter() - started, 3)}
     finally:
         for upload in files:

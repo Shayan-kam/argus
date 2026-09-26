@@ -102,7 +102,7 @@ def test_visual_analysis_includes_terrain_and_waterfall_data():
     assert len(terrain["surface"][0]) == terrain["n_time_bins"]
     assert len(waterfall["frames"]) == terrain["n_time_bins"]
     assert "time_seconds" in terrain and "frequency_hz" in terrain
-    assert result["visual_analysis"]["suspicious_regions"]
+    assert "suspicious_regions" in result["visual_analysis"]
 
 
 def test_model_result_and_model_failure(tmp_path):

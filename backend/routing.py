@@ -57,6 +57,33 @@ AGENT_ROUTING_RULES = {
             "native_code",
             "authentication"
         ]
+    },
+
+    "Low-Level & Memory Security Agent": {
+        "required_any": [
+            "memory_allocation",
+            "buffer_manipulation",
+            "memory_unsafe",
+            "memory_lifecycle",
+            "alloc_arithmetic"
+        ],
+        "supporting_signals": [
+            "native_code",
+            "access_control",
+            "race_conditions"
+        ]
+    },
+
+    "HTTP Header Injection Agent": {
+        "required_any": [
+            "host_header",
+            "absolute_url_from_request",
+            "response_header_write"
+        ],
+        "supporting_signals": [
+            "user_input",
+            "authentication"
+        ]
     }
 }
 
@@ -90,6 +117,25 @@ AGENT_SIGNAL_MAPPING = {
         "unsafe_deserialization",
         "binary_format",
         "native_code",
+        "authentication"
+    ],
+
+    "Low-Level & Memory Security Agent": [
+        "memory_allocation",
+        "buffer_manipulation",
+        "memory_unsafe",
+        "memory_lifecycle",
+        "alloc_arithmetic",
+        "race_conditions",
+        "native_code",
+        "access_control"
+    ],
+
+    "HTTP Header Injection Agent": [
+        "host_header",
+        "absolute_url_from_request",
+        "response_header_write",
+        "user_input",
         "authentication"
     ]
 }
