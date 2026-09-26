@@ -11,6 +11,31 @@ import FindingsSection from "./components/FindingsSection";
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:8000";
 
+function normalizeRepositoryUrl(repositoryUrl) {
+    const trimmed = repositoryUrl.trim();
+
+    try {
+        const parsed = new URL(trimmed);
+        const host = parsed.hostname.replace(/^www\./, "");
+
+        if (host !== "github.com") {
+            return trimmed;
+        }
+
+        const parts = parsed.pathname.split("/").filter(Boolean);
+
+        if (parts.length < 2) {
+            return trimmed;
+        }
+
+        const repository = parts[1].replace(/\.git$/, "");
+
+        return `https://github.com/${parts[0]}/${repository}`;
+    } catch {
+        return trimmed;
+    }
+}
+
 const INITIAL_PROGRESS = {
     percent: 1,
     message: "Starting the scan",
@@ -41,17 +66,20 @@ function App() {
         setScanId(null);
         setScanData(null);
 
-        if (!repositoryUrl.trim()) {
+        const cleanedRepositoryUrl = normalizeRepositoryUrl(repositoryUrl);
+
+        if (!cleanedRepositoryUrl) {
             setError("Please enter a GitHub repository URL.");
             return;
         }
 
+        setRepositoryUrl(cleanedRepositoryUrl);
         setProgress(INITIAL_PROGRESS);
         setLoading(true);
 
         try {
             const body = {
-                repository_url: repositoryUrl,
+                repository_url: cleanedRepositoryUrl,
                 scan_profile: scanProfile
             };
 

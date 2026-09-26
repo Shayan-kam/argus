@@ -25,7 +25,7 @@ from fastapi.responses import FileResponse, StreamingResponse
 from pydantic import BaseModel, Field
 
 from agents import ALL_AGENTS
-from github import clone_repository
+from github import clone_repository, normalize_github_url
 from orchestrator import SecurityOrchestrator
 from report import generate_pdf_report
 
@@ -188,9 +188,13 @@ def execute_scan(request, scan_id, temporary_directory, on_progress):
     Clone a repository, analyze it, and write the PDF report.
     """
 
+    repository_url = normalize_github_url(
+        request.repository_url
+    )
+
     print(
         f"\nStarting scan for: "
-        f"{request.repository_url}"
+        f"{repository_url}"
     )
 
     print(
@@ -203,7 +207,7 @@ def execute_scan(request, scan_id, temporary_directory, on_progress):
         on_progress(2, 12, "Cloning the repository")
 
     repository_path = clone_repository(
-        repository_url=request.repository_url,
+        repository_url=repository_url,
         destination_directory=temporary_directory,
         github_token=request.github_token
     )
@@ -241,7 +245,7 @@ def execute_scan(request, scan_id, temporary_directory, on_progress):
     generate_pdf_report(
         findings=findings,
         output_path=str(report_path),
-        repository_url=request.repository_url
+        repository_url=repository_url
     )
 
     routing = analysis_result.get(
@@ -263,7 +267,7 @@ def execute_scan(request, scan_id, temporary_directory, on_progress):
 
     return {
         "scan_id": scan_id,
-        "repository_url": request.repository_url,
+        "repository_url": repository_url,
         "scan_profile": request.scan_profile,
 
         "files_analyzed": analysis_result.get(

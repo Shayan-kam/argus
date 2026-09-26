@@ -23,15 +23,31 @@ GITHUB_URL_PATTERN = re.compile(
 
 def normalize_github_url(repository_url):
     """
-    Strip trailing slashes and .git suffix from a GitHub URL.
+    Keep only https://github.com/owner/repo.
+
+    Extra path segments such as /branches, /tree/main, or /blob/...
+    are removed so a pasted GitHub page still clones the repository.
     """
 
-    url = repository_url.rstrip("/")
+    parsed = urlparse(repository_url.strip())
+    parts = [
+        part for part in parsed.path.split("/")
+        if part
+    ]
 
-    if url.endswith(".git"):
-        url = url[:-4]
+    if len(parts) < 2:
+        return repository_url.strip().rstrip("/")
 
-    return url
+    owner = parts[0]
+    repository = parts[1]
+
+    if repository.endswith(".git"):
+        repository = repository[:-4]
+
+    host = parsed.netloc or "github.com"
+    scheme = parsed.scheme or "https"
+
+    return f"{scheme}://{host}/{owner}/{repository}"
 
 
 def build_authenticated_url(repository_url, github_token=None):
