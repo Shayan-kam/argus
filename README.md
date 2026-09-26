@@ -20,6 +20,9 @@ Argus is a triage aid, not a replacement for a security review, a full static-an
 - [Project layout](#project-layout)
 - [Troubleshooting](#troubleshooting)
 
+## Architecture
+![Alt Text](argus-module-communication.drawio.png "Architecture Diagram")
+
 ## Features
 
 - Scans GitHub repositories using a URL, including pasted repository subpage URLs.
