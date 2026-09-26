@@ -119,6 +119,46 @@ SIGNAL_PATTERNS = {
         r"bearer"
     ],
 
+    # Low-level memory allocation routines
+    "memory_allocation": [
+        r"\bmalloc\s*\(",
+        r"\bcalloc\s*\(",
+        r"\brealloc\s*\(",
+        r"\bfree\s*\(",
+        r"\balloca\s*\(",
+        r"\bnew\s+\w+",
+        r"\bdelete\b"
+    ],
+
+    # String, pointer, and bounded buffer operations
+    "buffer_manipulation": [
+        r"\bstrcpy\s*\(",
+        r"\bstrcat\s*\(",
+        r"\bstrncpy\s*\(",
+        r"\bstrncat\s*\(",
+        r"\bgets\s*\(",
+        r"\bsprintf\s*\(",
+        r"\bsnprintf\s*\(",
+        r"\bvsprintf\s*\(",
+        r"\bmemcpy\s*\(",
+        r"\bmemmove\s*\(",
+        r"\bmemset\s*\(",
+        r"\bscanf\s*\("
+    ],
+
+    # Low-level permission, identity, and access checks
+    "access_control": [
+        r"\bsetuid\s*\(",
+        r"\bseteuid\s*\(",
+        r"\bsetgid\s*\(",
+        r"\bsetegid\s*\(",
+        r"\bchmod\s*\(",
+        r"\bfchmod\s*\(",
+        r"\bchown\s*\(",
+        r"\bsetgroups\s*\(",
+        r"\bcap_set_proc\b"
+    ],
+
     "memory_unsafe": [
         r"\bstrcpy\s*\(",
         r"\bstrcat\s*\(",
