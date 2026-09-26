@@ -1,3 +1,6 @@
+import { useEffect, useRef, useState } from "react";
+import SlideCommit from "./SlideCommit";
+
 const SCAN_PROFILES = [
     { id: "quick", label: "Quick", description: "Rules only" },
     { id: "standard", label: "Standard", description: "Rules + AI agents" },
@@ -16,6 +19,27 @@ function ScanForm({
     loading,
     onSubmit
 }) {
+    const slideRef = useRef(null);
+    const [slideWidth, setSlideWidth] = useState(280);
+
+    useEffect(() => {
+        const node = slideRef.current;
+
+        if (!node) {
+            return undefined;
+        }
+
+        const updateWidth = () => {
+            setSlideWidth(Math.max(220, Math.round(node.clientWidth)));
+        };
+
+        updateWidth();
+        const observer = new ResizeObserver(updateWidth);
+        observer.observe(node);
+
+        return () => observer.disconnect();
+    }, []);
+
     return (
         <section className="scan-form" data-reveal>
             <div className="input-section">
@@ -28,9 +52,26 @@ function ScanForm({
                     aria-label="GitHub repository URL"
                 />
 
-                <button type="button" onClick={onSubmit} disabled={loading}>
-                    {loading ? "Analyzing..." : "Analyze Repository"}
-                </button>
+                <div className="scan-slide" ref={slideRef}>
+                    <SlideCommit
+                        label="Slide to analyze"
+                        doneLabel="Analyzed"
+                        errorLabel="Scan failed"
+                        onConfirm={onSubmit}
+                        trackColor="#0b1628"
+                        handleColor="#68d4ff"
+                        successColor="#34d399"
+                        dangerColor="#fb7185"
+                        width={slideWidth}
+                        height={56}
+                        radius={16}
+                        speed={55}
+                        returnBounce={0.32}
+                        holdMs={1800}
+                        disabled={loading}
+                        className="scan-slide-commit"
+                    />
+                </div>
             </div>
 
             <div className="scan-options">

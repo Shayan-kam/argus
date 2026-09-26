@@ -225,6 +225,69 @@ LINE_RULES = [
         ),
     },
     {
+        "title": "Host header used in absolute URL",
+        "vulnerability_type": "HTTP Header Injection",
+        "severity": "High",
+        "confidence": 0.82,
+        "pattern": (
+            r"(?i)("
+            r"f['\"]https?://\{[^\}]*(host|get_host|url_root|base_url)[^\}]*\}"
+            r"|"
+            r"['\"]https?://['\"]\s*\+"
+            r"|"
+            r"`https?://[^`]*\$\{[^}`]*host[^}`]*\}[^`]*`"
+            r"|"
+            r"(request\.host|request\.get_host\s*\(|request\.url_root|"
+            r"request\.base_url|HTTP_HOST|X[-_]Forwarded[-_]Host|"
+            r"req\.headers\[['\"]host['\"]\]|req\.hostname|"
+            r"getHttpHost\s*\(|getSchemeAndHttpHost\s*\()"
+            r".{0,120}(https?://|url_for\s*\(|_external\s*=\s*True|"
+            r"build_absolute_uri|reset|password|verify|confirm|"
+            r"invite|magic|Location|redirect|cache)"
+            r"|"
+            r"(https?://|url_for\s*\(|_external\s*=\s*True|"
+            r"build_absolute_uri|reset[_-]?(url|link|password)|"
+            r"password[_-]?reset|verify|confirm|invite|magic[_-]?link|"
+            r"Location|redirect|cache[_-]?key)"
+            r".{0,120}"
+            r"(request\.host|request\.get_host\s*\(|request\.url_root|"
+            r"request\.base_url|HTTP_HOST|X[-_]Forwarded[-_]Host|"
+            r"req\.headers\[['\"]host['\"]\]|req\.hostname|"
+            r"getHttpHost\s*\(|getSchemeAndHttpHost\s*\()"
+            r")"
+        ),
+        "description": (
+            "An absolute URL, password-reset link, redirect, or cache key "
+            "is built from the request Host header. An attacker can set "
+            "Host or X-Forwarded-Host to their own domain."
+        ),
+        "recommendation": (
+            "Build public links from a fixed application base URL or a "
+            "strict host allowlist. Prefer relative paths for resets and "
+            "redirects."
+        ),
+    },
+    {
+        "title": "Possible HTTP response header injection",
+        "vulnerability_type": "HTTP Header Injection",
+        "severity": "High",
+        "confidence": 0.78,
+        "pattern": (
+            r"(?i)(setHeader\s*\(|set_header\s*\(|add_header\s*\(|"
+            r"res\.setHeader\s*\(|res\.set\s*\(|response\.headers\s*\[)"
+            r".{0,120}(request\.|req\.|params|query|headers)"
+        ),
+        "description": (
+            "A response header appears to take a value from the request. "
+            "If carriage returns or newlines are not removed, an attacker "
+            "can inject extra headers or split the response."
+        ),
+        "recommendation": (
+            "Reject or strip CR and LF from any value written into a "
+            "response header, and prefer typed header APIs."
+        ),
+    },
+    {
         "title": "Hardcoded credential",
         "vulnerability_type": "Hardcoded Secret",
         "severity": "High",
