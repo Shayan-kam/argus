@@ -12,7 +12,6 @@ import FindingsSection from "./components/FindingsSection";
 import MoltenMetal from "./components/MoltenMetal";
 import ScrollReveal from "./components/ScrollReveal";
 import AudioForensics from "./components/AudioForensics";
-import MoltenMetal from "./components/MoltenMetal";
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:8000";
 
