@@ -27,13 +27,14 @@ def test_demo_identity_uses_contents_not_filename(tmp_path, unknown_audio):
     assert demo["manipulation_type"] == "generated_test_audio"
     assert demo["manipulation_assessment"]["status"] == "known_source"
     assert "not a person's voice" in demo["interpretation"]["explanation"]
-    assert len(demo["manipulation_assessment"]["categories"]) == 6
+    assert len(demo["manipulation_assessment"]["categories"]) == 5
+    assert sum(1 for category in demo["manipulation_assessment"]["categories"] if category["label"] == "Audio Editing / Real") == 1
 
     other = analyze_audio(str(unknown_audio))
     assert other["source"] == "uploaded_audio"
-    assert other["manipulation_type"] is None
-    assert other["manipulation_assessment"]["status"] == "not_assessed"
-    assert "real or generated" in other["interpretation"]["explanation"]
+    assert other["manipulation_type"] is not None
+    assert other["manipulation_assessment"]["status"] == "heuristic"
+    assert "feature-based heuristic" in other["interpretation"]["explanation"].lower()
     assert len(other["interpretation"]["insights"]) == 4
 
 
@@ -96,6 +97,14 @@ def test_low_score_alone_does_not_announce_unmodified_audio(unknown_audio):
     assert result["manipulation_type"] is None
     assert result["manipulation_assessment"]["status"] == "not_assessed"
 
+
+def test_baseline_audio_uses_heuristic_type_estimate_when_no_detector_is_available(unknown_audio):
+    result = analyze_audio(str(unknown_audio))
+    assert result["manipulation_assessment"]["status"] == "heuristic"
+    assert result["manipulation_type"] is not None
+    assert result["manipulation_assessment"]["basis"] == "Signal-heuristic estimate"
+
+
 @pytest.mark.parametrize("labels", [
     ["real", "real", "tts"],
     ["fully_synthetic", "fully_synthetic", "real"],
@@ -141,3 +150,8 @@ def test_type_detector_without_synthetic_model_is_explained(tmp_path):
     assert result["manipulation_type"] == "voice_conversion"
     assert "type detector" in result["interpretation"]["headline"].lower()
     assert "voice conversion" in result["interpretation"]["explanation"].lower()
+
+
+def test_audio_editing_and_real_share_one_combined_category_definition():
+    labels = [category["label"] for category in assess_manipulation(str(SAMPLE), [{}] * 3, [{} for _ in range(3)])["categories"]]
+    assert labels.count("Audio Editing / Real") == 1
