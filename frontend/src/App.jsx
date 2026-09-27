@@ -13,7 +13,10 @@ import ScrollReveal from "./components/ScrollReveal";
 import AudioForensics from "./components/AudioForensics";
 import MoltenMetal from "./components/MoltenMetal";
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:8000";
+const API_BASE_URL = import.meta.env.VITE_API_URL
+    || (import.meta.env.DEV
+        ? "http://localhost:8000"
+        : "https://argus-backend-10e5.onrender.com");
 
 function normalizeRepositoryUrl(repositoryUrl) {
     const trimmed = repositoryUrl.trim();
